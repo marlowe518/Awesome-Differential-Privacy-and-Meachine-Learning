@@ -1,0 +1,12 @@
+*.pyc
+*.swp
+backup/
+results/
+software/
+dataset/
+data/
+__pycache__/
+baselines/
+temp*
+tmp_vis.png
+*.pt
