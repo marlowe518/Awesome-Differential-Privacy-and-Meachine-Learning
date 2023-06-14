@@ -1,5 +1,6 @@
 from torch_geometric.data import Data
 import torch
+import scipy.sparse as ssp
 import numpy as np
 
 
@@ -91,6 +92,32 @@ def sample_adjacency_lists(edges, train_nodes,
     return sampled_edges
 
 
+def edge_cheking_utils(graph: torch.Tensor):
+    # The graph shape = (2, N)
+    graphT = graph.T
+    graphT = tuple(map(tuple, graphT.numpy()))
+    from collections import Counter
+    replicated_item = {}
+    tmp = dict(Counter(graphT))
+    for key, value in tmp.items():
+        if value > 1:
+            replicated_item[key] = value
+    sampled_out_edges = []
+    graph_set = set(graphT)  # filter out the replicated edges
+    return graph_set
+
+
+def degree_constrained_check(graph: torch.Tensor, max_node_degree: int, type="outgoing"):
+    edges = get_adjacency_lists_from_tensor(graph)
+    violated_node = {}
+    if type == "incoming":
+        edges = reverse_edges(edges)
+    for u, neighbors in edges.items():
+        if len(neighbors) > max_node_degree:
+            violated_node[u] = neighbors
+    return violated_node
+
+
 def subsample_graph(graph: [Data, torch.Tensor], max_degree):
     if isinstance(graph, Data):
         edges = get_adjacency_lists(graph)
@@ -108,10 +135,13 @@ def subsample_graph(graph: [Data, torch.Tensor], max_degree):
     receivers = []
     for u in edges:
         for v in edges[u]:
-            senders.append(u)  # 空值的键会被省略
+            senders.append(u)
             receivers.append(v)
     edge_index = torch.tensor([senders, receivers])
-    graph.edge_index = edge_index
+    if isinstance(graph, Data):
+        graph.edge_index = edge_index
+    elif isinstance(graph, torch.Tensor):
+        graph = edge_index
     return graph
 
 
@@ -122,6 +152,13 @@ def filter_out_one_way_edges(edge_index: torch.Tensor):
 
 
 def subsample_graph_for_undirected_graph(graph, max_degree):
+    from torch_geometric.utils import to_undirected
+    if isinstance(graph, torch.Tensor):
+        graph = to_undirected(graph)
     graph = subsample_graph(graph, max_degree)
-    graph.edge_index = filter_out_one_way_edges(graph.edge_index)
+    graph = filter_out_one_way_edges(graph)
+    graph = ssp.csc_matrix((np.ones(graph.shape[1]), (graph[0].numpy(), graph[1].numpy())))
+    graph_triu = ssp.triu(graph, k=1)
+    row, col, _ = ssp.find(graph_triu)
+    graph = torch.tensor([row, col], dtype=torch.int)
     return graph

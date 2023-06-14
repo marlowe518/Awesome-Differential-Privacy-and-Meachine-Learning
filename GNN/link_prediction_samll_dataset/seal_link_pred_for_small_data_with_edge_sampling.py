@@ -4,6 +4,8 @@ import os, sys
 import os.path as osp
 from shutil import copy
 import copy as cp
+
+import scipy
 from tqdm import tqdm
 import pdb
 
@@ -33,6 +35,7 @@ warnings.simplefilter('ignore', SparseEfficiencyWarning)
 
 from utils import *
 from models import *
+from GNN.sampler import subsample_graph, subsample_graph_for_undirected_graph
 
 parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # Dataset Setting
@@ -45,6 +48,9 @@ parser.add_argument('--num_hops', type=int, default=2)
 parser.add_argument('--use_feature', action='store_true',
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
+parser.add_argument('--max_node_degree', default=5)
+parser.add_argument('--check_degree_constrained', default=False)
+parser.add_argument('--check_degree_distribution', default=True)
 
 # GNN Setting
 parser.add_argument('--sortpool_k', type=float, default=0.6)
@@ -123,6 +129,7 @@ class SEALDatasetSmall(InMemoryDataset):
         self.ratio_per_hop = ratio_per_hop
         self.max_nodes_per_hop = max_nodes_per_hop
         self.directed = directed
+        self.process_log_path = root + "/log"
         super(SEALDatasetSmall, self).__init__(root)
         self.data, self.slices = torch.load(self.processed_paths[0])
 
@@ -136,15 +143,78 @@ class SEALDatasetSmall(InMemoryDataset):
         return [name]
 
     def process(self):
-        A_csr = self.A_csc.tocsr()
-
-        if not self.directed:
-            self.A_csc = None
-
         # Here we do not sample pos edges and neg edges should be already included.
         assert "edge_neg" in self.split_edge[self.split].keys(), "neg edges must be given"
         pos_edge = self.split_edge[self.split]["edge"].t()
         neg_edge = self.split_edge[self.split]["edge_neg"].t()
+        with open(self.process_log_path, 'a') as f:
+            print(f">>>>>>>>Processing {self.split} edges>>>>>>>>", file=f)
+            print(f"pos_edge nums:{pos_edge.shape[1]}", file=f)
+            print(f"neg_edge nums:{neg_edge.shape[1]}", file=f)
+
+        # Here we sample the positive and negative edges to meet the constraint of node degree.
+        if self.split == "train":
+            pos_edge_degree_constrained: torch.Tensor = subsample_graph_for_undirected_graph(pos_edge,
+                                                                                             max_degree=args.max_node_degree)  # TODO: The train indices should be whole training graph (A_csc)
+            neg_edge_degree_constrained: torch.Tensor = subsample_graph_for_undirected_graph(neg_edge,
+                                                                                             max_degree=args.max_node_degree)
+            # Shuffle and ensure the same number of pos and neg edges
+            indexes = np.arange(min(pos_edge_degree_constrained.shape[1], neg_edge_degree_constrained.shape[1]))
+            random.shuffle(indexes)
+            pos_edge_degree_constrained = pos_edge_degree_constrained[:, indexes]
+            neg_edge_degree_constrained = neg_edge_degree_constrained[:, indexes]
+
+            degree_constrained_csc_mat = ssp.csc_matrix((np.ones(len(pos_edge_degree_constrained[0])),
+                                                         (pos_edge_degree_constrained[0],
+                                                          pos_edge_degree_constrained[1])),
+                                                        shape=self.A_csc.shape, dtype=int)
+            degree_constrained_csc_mat = degree_constrained_csc_mat + degree_constrained_csc_mat.T - ssp.diags(
+                degree_constrained_csc_mat.diagonal(), dtype=int)
+            self.A_csc = degree_constrained_csc_mat
+            if args.check_degree_constrained:
+                from GNN.sampler import degree_constrained_check
+                pos_edge_degree_unlimited_nodes_outgoing = degree_constrained_check(pos_edge_degree_constrained,
+                                                                                    args.max_node_degree)
+                neg_edge_degree_unlimited_nodes_outgoing = degree_constrained_check(neg_edge_degree_constrained,
+                                                                                    args.max_node_degree)
+                pos_edge_degree_unlimited_nodes_incoming = degree_constrained_check(pos_edge_degree_constrained,
+                                                                                    args.max_node_degree,
+                                                                                    type="incoming")
+                neg_edge_degree_unlimited_nodes_incoming = degree_constrained_check(neg_edge_degree_constrained,
+                                                                                    args.max_node_degree,
+                                                                                    type="incoming")
+                A_arr = self.A_csc.toarray()
+                degree_distribution = A_arr.sum(axis=1)
+                violated_nodes = np.where(degree_distribution > args.max_node_degree)
+                assert not violated_nodes, f"Nodes:{violated_nodes} does not meet the degree constraint!"
+            assert scipy.linalg.issymmetric(self.A_csc.toarray()), "Train_net must be symmetric!"
+            pos_edge = pos_edge_degree_constrained
+            neg_edge = neg_edge_degree_constrained
+            with open(self.process_log_path, 'a') as f:
+                print("After edge sampling", file=f)
+                print(f"pos_edge nums:{pos_edge.shape[1]}", file=f)
+                print(f"neg_edge nums:{neg_edge.shape[1]}", file=f)
+
+            if args.check_degree_distribution:
+                import matplotlib.pyplot as plt
+                import pandas as pd
+                degree_distribution = np.array(self.A_csc.sum(axis=1)).reshape(-1)
+                df = pd.DataFrame(degree_distribution, columns=["degree"])
+                # df["binned"] = pd.cut(degree_distribution, bins=10)
+                with open(self.process_log_path, 'a') as f:
+                    print(f"Degree distribution:", file=f)
+                    print(pd.value_counts(df["degree"]), file=f)
+                    # print(pd.value_counts(df["binned"]), file=f)
+                plt.hist(degree_distribution, bins=len(df["degree"].unique()))
+                plt.xlabel("Degree")
+                plt.ylabel("Frequency")
+                plt.show()
+
+        ####################################
+        A_csr = self.A_csc.tocsr()
+
+        if not self.directed:
+            self.A_csc = None
 
         # Extract enclosing subgraphs for pos and neg edges
         pos_list = extract_enclosing_subgraphs(
@@ -251,6 +321,9 @@ def evaluate_auc(val_pred, val_true, test_pred, test_true):
 
 
 def main():
+    torch.manual_seed(1234)
+    np.random.seed(1234)
+    random.seed(1234)
     A_csc, split_edge = load_data(args.data_name)
 
     train_dataset: SEALDatasetSmall = SEALDatasetSmall(dataset_path, A_csc, split_edge, args.num_hops,
@@ -327,7 +400,7 @@ if __name__ == "__main__":
     if args.save_appendix == '':
         args.save_appendix = '_' + time.strftime("%Y%m%d%H%M%S")  # Mark the time
     if args.data_appendix == '':  # Create the data save path
-        args.data_appendix = '_h{}'.format(args.num_hops)
+        args.data_appendix = '_d{}_h{}'.format(args.max_node_degree, args.num_hops)
     # Results include the log, running command, etc.
     args.res_dir = os.path.join('results/{}{}'.format(args.data_name, args.save_appendix))
     if not os.path.exists(args.res_dir):  # Create the result directory

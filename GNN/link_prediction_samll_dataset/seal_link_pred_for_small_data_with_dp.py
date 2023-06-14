@@ -4,6 +4,8 @@ import os, sys
 import os.path as osp
 from shutil import copy
 import copy as cp
+
+import scipy
 from tqdm import tqdm
 import pdb
 
@@ -25,6 +27,8 @@ from sklearn.metrics import roc_auc_score
 
 import warnings
 
+from optimizer.dp_optimizer import DPSGD
+
 warnings.filterwarnings("ignore", category=UserWarning)
 
 from scipy.sparse import SparseEfficiencyWarning
@@ -32,11 +36,13 @@ from scipy.sparse import SparseEfficiencyWarning
 warnings.simplefilter('ignore', SparseEfficiencyWarning)
 
 from utils import *
-from models import *
+# from models import *
+from GNN.link_prediction.models import *
+from GNN.sampler import subsample_graph, subsample_graph_for_undirected_graph
 
 parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # Dataset Setting
-parser.add_argument('--data_name', type=str, default="USAir")
+parser.add_argument('--data_name', type=str, default="NS")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
@@ -45,10 +51,13 @@ parser.add_argument('--num_hops', type=int, default=2)
 parser.add_argument('--use_feature', action='store_true',
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
+parser.add_argument('--max_node_degree', default=3)
+parser.add_argument('--check_degree_constrained', default=False)
+parser.add_argument('--check_degree_distribution', default=True)
 
 # GNN Setting
 parser.add_argument('--sortpool_k', type=float, default=0.6)
-parser.add_argument('--num_layers', type=int, default=3)
+parser.add_argument('--num_layers', type=int, default=2)
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--hidden_channels', type=int, default=32)
 parser.add_argument('--train_percent', type=float, default=100)
@@ -61,10 +70,16 @@ parser.add_argument('--hitsK', default=50)
 
 # Training settings
 parser.add_argument('--lr', type=float, default=0.0001)
+parser.add_argument('--momentum', type=float, default=0.9)
 parser.add_argument('--epochs', type=int, default=50)
 parser.add_argument('--runs', type=int, default=1)
 parser.add_argument('--num_workers', type=int, default=0,
                     help="number of workers for dynamic mode; 0 if not dynamic")
+
+# Privacy settings
+parser.add_argument('--max_norm', type=float, default=0.1)
+parser.add_argument('--sigma', type=float, default=1.23)
+parser.add_argument('--target_delta', type=float, default=1e-5)
 
 # Testing settings
 parser.add_argument('--eval_steps', type=int, default=1)
@@ -123,6 +138,7 @@ class SEALDatasetSmall(InMemoryDataset):
         self.ratio_per_hop = ratio_per_hop
         self.max_nodes_per_hop = max_nodes_per_hop
         self.directed = directed
+        self.process_log_path = root + "/log"
         super(SEALDatasetSmall, self).__init__(root)
         self.data, self.slices = torch.load(self.processed_paths[0])
 
@@ -136,15 +152,80 @@ class SEALDatasetSmall(InMemoryDataset):
         return [name]
 
     def process(self):
-        A_csr = self.A_csc.tocsr()
-
-        if not self.directed:
-            self.A_csc = None
-
         # Here we do not sample pos edges and neg edges should be already included.
         assert "edge_neg" in self.split_edge[self.split].keys(), "neg edges must be given"
         pos_edge = self.split_edge[self.split]["edge"].t()
         neg_edge = self.split_edge[self.split]["edge_neg"].t()
+        with open(self.process_log_path, 'a') as f:
+            print(f">>>>>>>>Processing {self.split} edges>>>>>>>>", file=f)
+            print(f"pos_edge nums:{pos_edge.shape[1]}", file=f)
+            print(f"neg_edge nums:{neg_edge.shape[1]}", file=f)
+
+        # Here we sample the positive and negative edges to meet the constraint of node degree.
+        if self.split == "train":
+            # TODO: In the future, the pos edges can be sampled, and the train indices should be whole training graph (i.e., A_csc)
+            pos_edge_degree_constrained: torch.Tensor = subsample_graph_for_undirected_graph(pos_edge,
+                                                                                             max_degree=args.max_node_degree)
+            neg_edge_degree_constrained: torch.Tensor = subsample_graph_for_undirected_graph(neg_edge,
+                                                                                             max_degree=args.max_node_degree)
+            # Shuffle and ensure #pos_edges = #neg_edges
+            indexes = np.arange(min(pos_edge_degree_constrained.shape[1], neg_edge_degree_constrained.shape[1]))
+            random.shuffle(indexes)
+            pos_edge_degree_constrained = pos_edge_degree_constrained[:, indexes]
+            neg_edge_degree_constrained = neg_edge_degree_constrained[:, indexes]
+
+            degree_constrained_csc_mat = ssp.csc_matrix((np.ones(len(pos_edge_degree_constrained[0])),
+                                                         (pos_edge_degree_constrained[0],
+                                                          pos_edge_degree_constrained[1])),
+                                                        shape=self.A_csc.shape, dtype=int)
+            degree_constrained_csc_mat = degree_constrained_csc_mat + degree_constrained_csc_mat.T - ssp.diags(
+                degree_constrained_csc_mat.diagonal(), dtype=int)  # To undirected graph
+            self.A_csc = degree_constrained_csc_mat
+            assert scipy.linalg.issymmetric(self.A_csc.toarray()), "Train_net must be symmetric!"
+            pos_edge = pos_edge_degree_constrained
+            neg_edge = neg_edge_degree_constrained
+            with open(self.process_log_path, 'a') as f:
+                print("After edge sampling", file=f)
+                print(f"pos_edge nums:{pos_edge.shape[1]}", file=f)
+                print(f"neg_edge nums:{neg_edge.shape[1]}", file=f)
+
+            if args.check_degree_constrained:
+                from GNN.sampler import degree_constrained_check
+                pos_edge_degree_unlimited_nodes_outgoing = degree_constrained_check(pos_edge_degree_constrained,
+                                                                                    args.max_node_degree)
+                neg_edge_degree_unlimited_nodes_outgoing = degree_constrained_check(neg_edge_degree_constrained,
+                                                                                    args.max_node_degree)
+                pos_edge_degree_unlimited_nodes_incoming = degree_constrained_check(pos_edge_degree_constrained,
+                                                                                    args.max_node_degree,
+                                                                                    type="incoming")
+                neg_edge_degree_unlimited_nodes_incoming = degree_constrained_check(neg_edge_degree_constrained,
+                                                                                    args.max_node_degree,
+                                                                                    type="incoming")
+                A_arr = self.A_csc.toarray()
+                degree_distribution = A_arr.sum(axis=1)
+                violated_nodes = np.where(degree_distribution > args.max_node_degree)
+                assert not violated_nodes, f"Nodes:{violated_nodes} does not meet the degree constraint!"
+
+            if args.check_degree_distribution:
+                import matplotlib.pyplot as plt
+                import pandas as pd
+                degree_distribution = np.array(self.A_csc.sum(axis=1)).reshape(-1)
+                df = pd.DataFrame(degree_distribution, columns=["degree"])
+                # df["binned"] = pd.cut(degree_distribution, bins=10)
+                with open(self.process_log_path, 'a') as f:
+                    print(f"Degree distribution:", file=f)
+                    print(pd.value_counts(df["degree"]), file=f)
+                    # print(pd.value_counts(df["binned"]), file=f)
+                plt.hist(degree_distribution, bins=len(df["degree"].unique()))
+                plt.xlabel("Degree")
+                plt.ylabel("Frequency")
+                plt.show()
+
+        # ------------------------------------------------------------- #
+        A_csr = self.A_csc.tocsr()
+
+        if not self.directed:
+            self.A_csc = None
 
         # Extract enclosing subgraphs for pos and neg edges
         pos_list = extract_enclosing_subgraphs(
@@ -157,24 +238,123 @@ class SEALDatasetSmall(InMemoryDataset):
         del pos_list, neg_list
 
 
-def train(model, train_loader, optimizer, train_dataset, emb=None):
+# def train(model, train_loader, optimizer, train_dataset, emb=None):
+#     model.train()
+#
+#     total_loss = 0
+#     pbar = tqdm(train_loader, ncols=70)
+#     for data in pbar:
+#         data = data.to(device)
+#         optimizer.zero_grad()
+#         x = data.x if args.use_feature else None
+#         edge_weight = data.edge_weight if args.use_edge_weight else None
+#         node_id = data.node_id if emb else None
+#         logits = model(data.z, data.edge_index, data.batch, x, edge_weight, node_id)
+#         loss = BCEWithLogitsLoss()(logits.view(-1), data.y.to(torch.float))
+#         loss.backward()
+#         optimizer.step()
+#         total_loss += loss.item() * data.num_graphs
+#
+#     return total_loss / len(train_dataset)
+def compute_max_terms_per_node(num_message_passing_steps, max_node_degree):
+    max_node_degree = 2 * max_node_degree ** 2
+    if num_message_passing_steps == 1:
+        return max_node_degree
+
+    if num_message_passing_steps == 2:
+        return max_node_degree ** 2 + max_node_degree
+
+    if num_message_passing_steps == 3:
+        return max_node_degree ** 3 + max_node_degree ** 2 + max_node_degree
+
+
+def compute_base_sensitivity(num_message_passing_steps, max_degree):
+    """Returns the base sensitivity which is multiplied to the clipping threshold.
+
+    Args:
+
+    """
+
+    num_message_passing_steps = num_message_passing_steps
+    max_node_degree = max_degree
+
+    if num_message_passing_steps == 1:
+        return float(2 * (max_node_degree + 1))
+
+    if num_message_passing_steps == 2:
+        return float(2 * (max_node_degree ** 2 + max_node_degree + 1))
+
+    if num_message_passing_steps == 3:
+        return float(2 * (max_node_degree ** 3 + max_node_degree * 2 + max_node_degree))
+
+    # We only support MLP and upto 2-layer GNNs.
+    raise ValueError('Not supported for num_message_passing_steps > 2.')
+
+
+def train_dynamic_add_noise(model, train_loader, optimizer, criterion, full_batch=False):
+    '''
+    Args:
+        model:
+        train_loader: PyG DataLoader
+        optimizer:
+
+    Returns:
+
+    '''
     model.train()
+    train_loss = 0.0
+    aa = 0
+    train_acc = 0.
+    i = 0
 
-    total_loss = 0
-    pbar = tqdm(train_loader, ncols=70)
-    for data in pbar:
-        data = data.to(device)
-        optimizer.zero_grad()
-        x = data.x if args.use_feature else None
-        edge_weight = data.edge_weight if args.use_edge_weight else None
-        node_id = data.node_id if emb else None
-        logits = model(data.z, data.edge_index, data.batch, x, edge_weight, node_id)
-        loss = BCEWithLogitsLoss()(logits.view(-1), data.y.to(torch.float))
-        loss.backward()
-        optimizer.step()
-        total_loss += loss.item() * data.num_graphs
+    for id, data in enumerate(train_loader):  # TODO per-sample computation for mini-batch
+        optimizer.zero_accum_grad()  # 梯度清空
+        for id in range(data.num_graphs):
+            data_microbatch = data[id]
+            data_microbatch.to(device)
+            optimizer.zero_microbatch_grad()
+            x = data_microbatch.x if args.use_feature else None
+            edge_weight = data_microbatch.edge_weight if args.use_edge_weight else None
+            node_id = data_microbatch.node_id if emb else None
+            logits = model(data_microbatch.z, data_microbatch.edge_index, data_microbatch.batch, x, edge_weight,
+                           node_id, micro_batch=True)
+            loss = criterion(logits.view(-1), data_microbatch.y.to(torch.float))
+            loss.backward()  # 梯度求导，这边求出梯度
+            optimizer.microbatch_step()  # 这个step做的是每个样本的梯度裁剪和梯度累加的操作
+            train_loss += loss.item()
+        optimizer.step_dp()  # 这个做的是梯度加噪和梯度平均更新下降的操作
+    return train_loss, train_acc  # 返回平均损失和平均准确率
 
-    return total_loss / len(train_dataset)
+
+def train(model, optimizer, train_dataset, epoch, emb=None):
+    model.train()
+    criterion = BCEWithLogitsLoss()
+    indices = np.random.choice(range(len(train_dataset)), size=(args.batch_size,), replace=False)
+    train_batch_subgraphs = [train_dataset[i] for i in indices]
+    train_loader = DataLoader(train_batch_subgraphs, batch_size=args.batch_size, num_workers=0, shuffle=False)
+    train_loss, train_acc = train_dynamic_add_noise(model, train_loader, optimizer, criterion,
+                                                    full_batch=False)
+    print(f"epoch:{epoch}, total loss:{train_loss}")
+
+    # ------------------- privacy accounting ------------------- #
+    from privacy_analysis.RDP.compute_multiterm_rdp import compute_multiterm_rdp
+    from privacy_analysis.RDP.rdp_convert_dp import compute_eps
+    orders = np.arange(1, 10, 0.1)[1:]
+    max_terms_per_node = compute_max_terms_per_node(num_message_passing_steps=args.num_layers,
+                                                    max_node_degree=args.max_node_degree)
+    assert max_terms_per_node <= len(train_dataset), "#affected terms must <= #samples"
+    rdp_every_epoch = compute_multiterm_rdp(orders, epoch, args.sigma, len(train_dataset),
+                                            max_terms_per_node, args.batch_size)
+
+    from privacy_analysis.RDP.compute_rdp import compute_rdp
+    rdp_every_epoch_org = compute_rdp(args.batch_size / len(train_dataset), args.sigma, 1 * epoch, orders)
+    epsilon, best_alpha = compute_eps(orders, rdp_every_epoch, args.target_delta)
+    # epsilon_org, best_alpha_org = compute_eps(orders, rdp_every_epoch_org, args.target_delta)
+    print("epoch: {:3.0f}".format(epoch) + " | epsilon: {:10.7f}".format(
+        epsilon) + " | best_alpha: {:7.4f}".format(best_alpha))
+    # print("epoch: {:3.0f}".format(epoch) + " | epsilon_org: {:10.7f}".format(
+    #     epsilon_org) + " | best_alpha: {:7.4f}".format(best_alpha_org))
+    return train_loss
 
 
 def eval_hits(y_pred_pos, y_pred_neg, K, type_info="torch"):
@@ -251,6 +431,9 @@ def evaluate_auc(val_pred, val_true, test_pred, test_true):
 
 
 def main():
+    torch.manual_seed(1234)
+    np.random.seed(1234)
+    random.seed(1234)
     A_csc, split_edge = load_data(args.data_name)
 
     train_dataset: SEALDatasetSmall = SEALDatasetSmall(dataset_path, A_csc, split_edge, args.num_hops,
@@ -270,11 +453,22 @@ def main():
                              num_workers=args.num_workers)
 
     for run in range(args.runs):
-        model = DGCNN(args.hidden_channels, args.num_layers, max_z, args.sortpool_k,
-                      train_dataset, args.dynamic_train, use_feature=args.use_feature,
-                      node_embedding=emb).to(device)
+        # model = DGCNN(args.hidden_channels, args.num_layers, max_z, args.sortpool_k,
+        #               train_dataset, args.dynamic_train, use_feature=args.use_feature,
+        #               node_embedding=emb).to(device)
+        model = GCN(args.hidden_channels, args.num_layers, max_z, train_dataset, use_feature=args.use_feature,
+                    node_embedding=emb).to(device)
         parameters = list(model.parameters())
-        optimizer = torch.optim.Adam(params=parameters, lr=args.lr)
+        sens = compute_base_sensitivity(max_degree=args.max_node_degree, num_message_passing_steps=args.num_layers)
+        optimizer = DPSGD(
+            l2_norm_clip=args.max_norm,  # 裁剪范数
+            noise_multiplier=args.sigma * sens,
+            minibatch_size=args.batch_size,  # 几个样本梯度进行一次梯度下降
+            microbatch_size=1,  # 几个样本梯度进行一次裁剪，这里选择逐样本裁剪
+            params=model.parameters(),
+            lr=args.lr,
+            momentum=args.momentum
+        )
         total_params = sum(p.numel() for param in parameters for p in param)
         print(f'Total number of parameters is {total_params}')
 
@@ -285,7 +479,7 @@ def main():
         # Training
         start_epoch = 1
         for epoch in range(start_epoch, start_epoch + args.epochs):
-            loss = train(model, train_loader, optimizer, train_dataset, emb)
+            loss = train(model, optimizer, train_dataset, epoch, emb)
             if epoch % args.eval_steps == 0:
                 results = test(model, val_loader, test_loader, emb)
 
@@ -327,7 +521,7 @@ if __name__ == "__main__":
     if args.save_appendix == '':
         args.save_appendix = '_' + time.strftime("%Y%m%d%H%M%S")  # Mark the time
     if args.data_appendix == '':  # Create the data save path
-        args.data_appendix = '_h{}'.format(args.num_hops)
+        args.data_appendix = '_d{}_h{}'.format(args.max_node_degree, args.num_hops)
     # Results include the log, running command, etc.
     args.res_dir = os.path.join('results/{}{}'.format(args.data_name, args.save_appendix))
     if not os.path.exists(args.res_dir):  # Create the result directory
