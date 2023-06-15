@@ -5,6 +5,7 @@
 import argparse
 import time
 import os, sys
+
 sys.path.append("../../")
 import os.path as osp
 from shutil import copy
@@ -39,6 +40,7 @@ warnings.simplefilter('ignore', SparseEfficiencyWarning)
 
 from utils import *
 from models import *
+import scipy
 
 
 class SEALDataset(InMemoryDataset):
@@ -68,32 +70,88 @@ class SEALDataset(InMemoryDataset):
         return [name]
 
     def process(self):
-        pos_edge, neg_edge = get_pos_neg_edges(self.split, self.split_edge,
-                                               self.data.edge_index,
-                                               self.data.num_nodes,
-                                               self.percent)
-        from GNN.sampler import subsample_graph_for_undirected_graph
-        from torch_geometric.utils import is_undirected, to_undirected
-        if not is_undirected(pos_edge):
-            pos_edge = to_undirected(pos_edge)
-        if not is_undirected(neg_edge):
-            neg_edge = to_undirected(neg_edge)
-        pos_edge = subsample_graph_for_undirected_graph(pos_edge, max_degree=args.max_node_degree)
-        neg_edge = subsample_graph_for_undirected_graph(neg_edge, max_degree=args.max_node_degree)
+        if self.split == "train":
+            # Compress mutli-edge into edge with weight
+            edges, edge_weight = self.split_edge[self.split]["edge"].T, self.split_edge[self.split]["weight"]
+            if self.use_coalesce:  # compress mutli-edge into edge with weight
+                edges, edge_weight = coalesce(
+                    edges, edge_weight,
+                    self.data.num_nodes, self.data.num_nodes)
+            self.split_edge[self.split]["edge"], self.split_edge[self.split]["weight"] = edges.T, edge_weight
+            # Sampling neg edges
+            pos_edge, neg_edge = get_pos_neg_edges(self.split, self.split_edge,
+                                                   self.split_edge[self.split]["edge"].T,
+                                                   self.data.num_nodes,
+                                                   percent=100)  # load all edges for sampling
+            print(f">>>>>>>>Processing {self.split} edges>>>>>>>>")
+            print(f"pos_edge nums:{pos_edge.shape[1]}")
+            print(f"neg_edge nums:{neg_edge.shape[1]}")
+            # Edge sampling based on max node degree
+            from GNN.sampler import subsample_graph_for_undirected_graph
+            pos_edge_degree_constrained: torch.Tensor = subsample_graph_for_undirected_graph(pos_edge,
+                                                                                             max_degree=args.max_node_degree)
+            neg_edge_degree_constrained: torch.Tensor = subsample_graph_for_undirected_graph(neg_edge,
+                                                                                             max_degree=args.max_node_degree)
 
-        if self.use_coalesce:  # compress mutli-edge into edge with weight
-            self.data.edge_index, self.data.edge_weight = coalesce(
-                self.data.edge_index, self.data.edge_weight,
-                self.data.num_nodes, self.data.num_nodes)
+            # Form the adj matrix based on new edges
+            if 'edge_weight' in self.data:
+                edge_weight = edge_weight.view(-1)
+            else:
+                edge_weight = torch.ones(pos_edge_degree_constrained.size(1), dtype=int)
+            edge_weight = torch.ones(pos_edge_degree_constrained.size(1), dtype=int)
+            degree_constrained_csc_mat = ssp.csc_matrix((edge_weight,
+                                                         (pos_edge_degree_constrained[0],
+                                                          pos_edge_degree_constrained[1])),
+                                                        shape=(self.data.num_nodes, self.data.num_nodes), dtype=int)
+            degree_constrained_csc_mat = degree_constrained_csc_mat + degree_constrained_csc_mat.T - ssp.diags(
+                degree_constrained_csc_mat.diagonal(), dtype=int)  # To undirected graph
+            A = degree_constrained_csc_mat
+            # assert A.dot(A.T) == A.T.dot(A), "Train_net must be symmetric!"
+            # assert scipy.linalg.issymmetric(A.toarray()), "Train_net must be symmetric!"
 
-        if 'edge_weight' in self.data:
-            edge_weight = self.data.edge_weight.view(-1)
+            # Shuffle the edges
+            indexes = np.arange(min(pos_edge_degree_constrained.shape[1], neg_edge_degree_constrained.shape[1]))
+            random.shuffle(indexes)
+            pos_edge_degree_constrained = pos_edge_degree_constrained[:, indexes]
+            neg_edge_degree_constrained = neg_edge_degree_constrained[:, indexes]
+            pos_edge = pos_edge_degree_constrained
+            neg_edge = neg_edge_degree_constrained
+
+            # Record the sampling results
+            print("After edge sampling")
+            print(f"pos_edge nums:{pos_edge.shape[1]}")
+            print(f"neg_edge nums:{neg_edge.shape[1]}")
+
+            # Examples sampling (How many pos and neg edges)
+            np.random.seed(123)
+            num_pos = pos_edge.size(1)
+            perm = np.random.permutation(num_pos)
+            perm = perm[:int(self.percent / 100 * num_pos)]
+            pos_edge = pos_edge[:, perm]
+            # subsample for neg_edge
+            np.random.seed(123)
+            num_neg = neg_edge.size(1)
+            perm = np.random.permutation(num_neg)
+            perm = perm[:int(self.percent / 100 * num_neg)]
+            neg_edge = neg_edge[:, perm]
         else:
-            edge_weight = torch.ones(self.data.edge_index.size(1), dtype=int)
-        A = ssp.csr_matrix(
-            (edge_weight, (self.data.edge_index[0], self.data.edge_index[1])),
-            shape=(self.data.num_nodes, self.data.num_nodes)
-        )
+            pos_edge, neg_edge = get_pos_neg_edges(self.split, self.split_edge,
+                                                   self.data.edge_index,
+                                                   self.data.num_nodes,
+                                                   self.percent)  # load all edges for sampling
+            if self.use_coalesce:  # compress mutli-edge into edge with weight
+                self.data.edge_index, self.data.edge_weight = coalesce(
+                    self.data.edge_index, self.data.edge_weight,
+                    self.data.num_nodes, self.data.num_nodes)
+
+            if 'edge_weight' in self.data:
+                edge_weight = self.data.edge_weight.view(-1)
+            else:
+                edge_weight = torch.ones(self.data.edge_index.size(1), dtype=int)
+            A = ssp.csr_matrix(
+                (edge_weight, (self.data.edge_index[0], self.data.edge_index[1])),
+                shape=(self.data.num_nodes, self.data.num_nodes)
+            )
 
         if self.directed:
             A_csc = A.tocsc()
@@ -167,26 +225,6 @@ class SEALDynamicDataset(Dataset):
         data = construct_pyg_graph(*tmp, self.node_label)
 
         return data
-
-
-# def train():
-#     model.train()
-#
-#     total_loss = 0
-#     pbar = tqdm(train_loader, ncols=70)
-#     for data in pbar:
-#         data = data.to(device)
-#         optimizer.zero_grad()
-#         x = data.x if args.use_feature else None
-#         edge_weight = data.edge_weight if args.use_edge_weight else None
-#         node_id = data.node_id if emb else None
-#         logits = model(data.z, data.edge_index, data.batch, x, edge_weight, node_id)
-#         loss = BCEWithLogitsLoss()(logits.view(-1), data.y.to(torch.float))
-#         loss.backward()
-#         optimizer.step()
-#         total_loss += loss.item() * data.num_graphs
-#
-#     return total_loss / len(train_dataset)
 
 
 def train_dynamic_add_noise(model, train_loader, optimizer, criterion, full_batch=False):
@@ -276,6 +314,7 @@ def train():
     orders = np.arange(1, 10, 0.1)[1:]
     max_terms_per_node = compute_max_terms_per_node(num_message_passing_steps=args.num_layers,
                                                     max_node_degree=args.max_node_degree)
+    max_terms_per_node = min(max_terms_per_node, len(train_dataset))
     rdp_every_epoch = compute_multiterm_rdp(orders, epoch, sigma, len(train_dataset),
                                             max_terms_per_node, args.batch_size)
 
@@ -456,7 +495,7 @@ parser.add_argument('--model', type=str, default='GCN')
 parser.add_argument('--sortpool_k', type=float, default=0.6)
 parser.add_argument('--num_layers', type=int, default=3)
 parser.add_argument('--hidden_channels', type=int, default=32)
-parser.add_argument('--batch_size', type=int, default=2048)
+parser.add_argument('--batch_size', type=int, default=32)
 # Subgraph extraction settings
 parser.add_argument('--num_hops', type=int, default=3)
 parser.add_argument('--ratio_per_hop', type=float, default=1.0)
@@ -519,8 +558,9 @@ args = parser.parse_args()
 if args.save_appendix == '':
     args.save_appendix = '_' + time.strftime("%Y%m%d%H%M%S")
 if args.data_appendix == '':
-    args.data_appendix = '_h{}_{}_rph{}'.format(
-        args.num_hops, args.node_label, ''.join(str(args.ratio_per_hop).split('.')))
+    args.data_appendix = '_d{}_h{}_{}_rph{}'.format(args.max_node_degree,
+                                                    args.num_hops, args.node_label,
+                                                    ''.join(str(args.ratio_per_hop).split('.')))
     if args.max_nodes_per_hop is not None:
         args.data_appendix += '_mnph{}'.format(args.max_nodes_per_hop)
     if args.use_valedges_as_input:

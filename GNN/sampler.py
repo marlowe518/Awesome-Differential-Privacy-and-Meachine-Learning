@@ -156,9 +156,11 @@ def subsample_graph_for_undirected_graph(graph, max_degree):
     if isinstance(graph, torch.Tensor):
         graph = to_undirected(graph)
     graph = subsample_graph(graph, max_degree)
-    graph = filter_out_one_way_edges(graph)
+    # graph = filter_out_one_way_edges(graph)
     graph = ssp.csc_matrix((np.ones(graph.shape[1]), (graph[0].numpy(), graph[1].numpy())))
     graph_triu = ssp.triu(graph, k=1)
-    row, col, _ = ssp.find(graph_triu)
+    graph_tril = ssp.tril(graph, k=1).T
+    graph_triu_filtered = graph_triu.multiply(graph_tril)  # Point-wise multiply to eliminate unsymmetrical element.
+    row, col, _ = ssp.find(graph_triu_filtered)
     graph = torch.tensor([row, col], dtype=torch.int)
     return graph

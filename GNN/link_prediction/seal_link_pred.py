@@ -69,14 +69,6 @@ class SEALDataset(InMemoryDataset):
                                                self.data.edge_index,
                                                self.data.num_nodes,
                                                self.percent)
-        from torch_geometric.utils import is_undirected, to_undirected
-        if not is_undirected(pos_edge):
-            pos_edge = to_undirected(pos_edge)
-        if not is_undirected(neg_edge):
-            neg_edge = to_undirected(neg_edge)
-        # from GNN.sampler import subsample_graph_for_undirected_graph
-        # pos_edge = subsample_graph_for_undirected_graph(pos_edge, 10)
-        # neg_edge = subsample_graph_for_undirected_graph(neg_edge, 10)
 
         if self.use_coalesce:  # compress mutli-edge into edge with weight
             self.data.edge_index, self.data.edge_weight = coalesce(
