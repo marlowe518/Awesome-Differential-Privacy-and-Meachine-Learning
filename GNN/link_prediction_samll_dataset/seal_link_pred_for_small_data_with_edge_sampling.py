@@ -39,7 +39,7 @@ from GNN.sampler import subsample_graph, subsample_graph_for_undirected_graph
 
 parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # Dataset Setting
-parser.add_argument('--data_name', type=str, default="USAir")
+parser.add_argument('--data_name', type=str, default="NS")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
@@ -54,7 +54,7 @@ parser.add_argument('--check_degree_distribution', default=True)
 
 # GNN Setting
 parser.add_argument('--sortpool_k', type=float, default=0.6)
-parser.add_argument('--num_layers', type=int, default=3)
+parser.add_argument('--num_layers', type=int, default=2)
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--hidden_channels', type=int, default=32)
 parser.add_argument('--train_percent', type=float, default=100)
@@ -336,6 +336,7 @@ def main():
     test_dataset: SEALDatasetSmall = SEALDatasetSmall(dataset_path, A_csc, split_edge, args.num_hops,
                                                       node_features=None,
                                                       percent=args.test_percent, split="test", directed=directed)
+    test_dataset = test_dataset.shuffle()
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size,
                             num_workers=args.num_workers)
@@ -343,9 +344,11 @@ def main():
                              num_workers=args.num_workers)
 
     for run in range(args.runs):
-        model = DGCNN(args.hidden_channels, args.num_layers, max_z, args.sortpool_k,
-                      train_dataset, args.dynamic_train, use_feature=args.use_feature,
-                      node_embedding=emb).to(device)
+        # model = DGCNN(args.hidden_channels, args.num_layers, max_z, args.sortpool_k,
+        #               train_dataset, args.dynamic_train, use_feature=args.use_feature,
+        #               node_embedding=emb).to(device)
+        model = GCN(args.hidden_channels, args.num_layers, max_z, train_dataset, use_feature=args.use_feature,
+                    node_embedding=emb).to(device)
         parameters = list(model.parameters())
         optimizer = torch.optim.Adam(params=parameters, lr=args.lr)
         total_params = sum(p.numel() for param in parameters for p in param)

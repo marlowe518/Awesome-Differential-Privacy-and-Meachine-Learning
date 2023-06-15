@@ -42,12 +42,13 @@ from GNN.sampler import subsample_graph, subsample_graph_for_undirected_graph
 
 parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # Dataset Setting
-parser.add_argument('--data_name', type=str, default="NS")
+parser.add_argument('--data_name', type=str, default="Yeast")
+# parser.add_argument('--data_name', type=str, default="Power")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
                     help="which specific labeling trick to use")
-parser.add_argument('--num_hops', type=int, default=2)
+parser.add_argument('--num_hops', type=int, default=1)
 parser.add_argument('--use_feature', action='store_true',
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
@@ -56,8 +57,9 @@ parser.add_argument('--check_degree_constrained', default=False)
 parser.add_argument('--check_degree_distribution', default=True)
 
 # GNN Setting
+parser.add_argument('--model', type=str, default="GCN")
 parser.add_argument('--sortpool_k', type=float, default=0.6)
-parser.add_argument('--num_layers', type=int, default=2)
+parser.add_argument('--num_layers', type=int, default=1)
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--hidden_channels', type=int, default=32)
 parser.add_argument('--train_percent', type=float, default=100)
@@ -69,7 +71,7 @@ parser.add_argument('--eval_metric', default="auc")
 parser.add_argument('--hitsK', default=50)
 
 # Training settings
-parser.add_argument('--lr', type=float, default=0.0001)
+parser.add_argument('--lr', type=float, default=0.1)
 parser.add_argument('--momentum', type=float, default=0.9)
 parser.add_argument('--epochs', type=int, default=50)
 parser.add_argument('--runs', type=int, default=1)
@@ -77,8 +79,9 @@ parser.add_argument('--num_workers', type=int, default=0,
                     help="number of workers for dynamic mode; 0 if not dynamic")
 
 # Privacy settings
+parser.add_argument('--lets_dp', type=bool, default=True)
 parser.add_argument('--max_norm', type=float, default=0.1)
-parser.add_argument('--sigma', type=float, default=1.23)
+parser.add_argument('--sigma', type=float, default=1.)
 parser.add_argument('--target_delta', type=float, default=1e-5)
 
 # Testing settings
@@ -238,24 +241,6 @@ class SEALDatasetSmall(InMemoryDataset):
         del pos_list, neg_list
 
 
-# def train(model, train_loader, optimizer, train_dataset, emb=None):
-#     model.train()
-#
-#     total_loss = 0
-#     pbar = tqdm(train_loader, ncols=70)
-#     for data in pbar:
-#         data = data.to(device)
-#         optimizer.zero_grad()
-#         x = data.x if args.use_feature else None
-#         edge_weight = data.edge_weight if args.use_edge_weight else None
-#         node_id = data.node_id if emb else None
-#         logits = model(data.z, data.edge_index, data.batch, x, edge_weight, node_id)
-#         loss = BCEWithLogitsLoss()(logits.view(-1), data.y.to(torch.float))
-#         loss.backward()
-#         optimizer.step()
-#         total_loss += loss.item() * data.num_graphs
-#
-#     return total_loss / len(train_dataset)
 def compute_max_terms_per_node(num_message_passing_steps, max_node_degree):
     max_node_degree = 2 * max_node_degree ** 2
     if num_message_passing_steps == 1:
@@ -274,21 +259,8 @@ def compute_base_sensitivity(num_message_passing_steps, max_degree):
     Args:
 
     """
-
-    num_message_passing_steps = num_message_passing_steps
-    max_node_degree = max_degree
-
-    if num_message_passing_steps == 1:
-        return float(2 * (max_node_degree + 1))
-
-    if num_message_passing_steps == 2:
-        return float(2 * (max_node_degree ** 2 + max_node_degree + 1))
-
-    if num_message_passing_steps == 3:
-        return float(2 * (max_node_degree ** 3 + max_node_degree * 2 + max_node_degree))
-
-    # We only support MLP and upto 2-layer GNNs.
-    raise ValueError('Not supported for num_message_passing_steps > 2.')
+    max_term_per_node = compute_max_terms_per_node(num_message_passing_steps, max_degree)
+    return float(2 * max_term_per_node)
 
 
 def train_dynamic_add_noise(model, train_loader, optimizer, criterion, full_batch=False):
@@ -323,10 +295,30 @@ def train_dynamic_add_noise(model, train_loader, optimizer, criterion, full_batc
             optimizer.microbatch_step()  # 这个step做的是每个样本的梯度裁剪和梯度累加的操作
             train_loss += loss.item()
         optimizer.step_dp()  # 这个做的是梯度加噪和梯度平均更新下降的操作
-    return train_loss, train_acc  # 返回平均损失和平均准确率
+    return train_loss / len(train_loader.dataset), train_acc  # 返回平均损失和平均准确率
 
 
-def train(model, optimizer, train_dataset, epoch, emb=None):
+def train(model, train_loader, optimizer, train_dataset, emb=None):
+    model.train()
+
+    total_loss = 0
+    pbar = tqdm(train_loader, ncols=70)
+    for data in pbar:
+        data = data.to(device)
+        optimizer.zero_grad()
+        x = data.x if args.use_feature else None
+        edge_weight = data.edge_weight if args.use_edge_weight else None
+        node_id = data.node_id if emb else None
+        logits = model(data.z, data.edge_index, data.batch, x, edge_weight, node_id)
+        loss = BCEWithLogitsLoss()(logits.view(-1), data.y.to(torch.float))
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item() * data.num_graphs
+
+    return total_loss / len(train_dataset)
+
+
+def train_with_dp(model, optimizer, train_dataset, epoch, emb=None):
     model.train()
     criterion = BCEWithLogitsLoss()
     indices = np.random.choice(range(len(train_dataset)), size=(args.batch_size,), replace=False)
@@ -342,7 +334,8 @@ def train(model, optimizer, train_dataset, epoch, emb=None):
     orders = np.arange(1, 10, 0.1)[1:]
     max_terms_per_node = compute_max_terms_per_node(num_message_passing_steps=args.num_layers,
                                                     max_node_degree=args.max_node_degree)
-    assert max_terms_per_node <= len(train_dataset), "#affected terms must <= #samples"
+    max_terms_per_node = min(max_terms_per_node, len(train_dataset)) - 1
+    # assert max_terms_per_node <= len(train_dataset), "#affected terms must <= #samples"
     rdp_every_epoch = compute_multiterm_rdp(orders, epoch, args.sigma, len(train_dataset),
                                             max_terms_per_node, args.batch_size)
 
@@ -446,6 +439,7 @@ def main():
     test_dataset: SEALDatasetSmall = SEALDatasetSmall(dataset_path, A_csc, split_edge, args.num_hops,
                                                       node_features=None,
                                                       percent=args.test_percent, split="test", directed=directed)
+    test_dataset = test_dataset.shuffle()  # TODO
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size,
                             num_workers=args.num_workers)
@@ -456,19 +450,32 @@ def main():
         # model = DGCNN(args.hidden_channels, args.num_layers, max_z, args.sortpool_k,
         #               train_dataset, args.dynamic_train, use_feature=args.use_feature,
         #               node_embedding=emb).to(device)
-        model = GCN(args.hidden_channels, args.num_layers, max_z, train_dataset, use_feature=args.use_feature,
-                    node_embedding=emb).to(device)
+        if args.model == "GCN":
+            model = GCN(args.hidden_channels, args.num_layers, max_z, train_dataset, use_feature=args.use_feature,
+                        node_embedding=emb).to(device)
+        else:
+            raise ValueError(f"{args.model} model is not supported!")
         parameters = list(model.parameters())
-        sens = compute_base_sensitivity(max_degree=args.max_node_degree, num_message_passing_steps=args.num_layers)
-        optimizer = DPSGD(
-            l2_norm_clip=args.max_norm,  # 裁剪范数
-            noise_multiplier=args.sigma * sens,
-            minibatch_size=args.batch_size,  # 几个样本梯度进行一次梯度下降
-            microbatch_size=1,  # 几个样本梯度进行一次裁剪，这里选择逐样本裁剪
-            params=model.parameters(),
-            lr=args.lr,
-            momentum=args.momentum
-        )
+        if args.lets_dp:
+            sens = compute_base_sensitivity(max_degree=args.max_node_degree, num_message_passing_steps=args.num_layers)
+            optimizer = DPSGD(
+                l2_norm_clip=args.max_norm,  # 裁剪范数
+                noise_multiplier=args.sigma * sens,
+                minibatch_size=args.batch_size,  # 几个样本梯度进行一次梯度下降
+                microbatch_size=1,  # 几个样本梯度进行一次裁剪，这里选择逐样本裁剪
+                params=model.parameters(),
+                lr=args.lr,
+                momentum=args.momentum
+            )
+            print(f"Number of train samples:{len(train_dataset)}")
+            print(f"Max term per edges:{compute_max_terms_per_node(args.num_layers, args.max_node_degree)}")
+            print(f"Sens:{sens}")
+            with open(log_file, 'a') as f:
+                print(f"Number of train samples:{len(train_dataset)}", file=f)
+                print(f"Max term per edges:{compute_max_terms_per_node(args.num_layers, args.max_node_degree)}", file=f)
+                print(f"Sens:{sens}", file=f)
+        else:
+            optimizer = torch.optim.SGD(params=parameters, lr=args.lr, momentum=args.momentum)
         total_params = sum(p.numel() for param in parameters for p in param)
         print(f'Total number of parameters is {total_params}')
 
@@ -479,7 +486,10 @@ def main():
         # Training
         start_epoch = 1
         for epoch in range(start_epoch, start_epoch + args.epochs):
-            loss = train(model, optimizer, train_dataset, epoch, emb)
+            if args.lets_dp:
+                loss = train_with_dp(model, optimizer, train_dataset, epoch, emb)
+            else:
+                loss = train(model, train_loader, optimizer, train_dataset, emb)
             if epoch % args.eval_steps == 0:
                 results = test(model, val_loader, test_loader, emb)
 
@@ -539,6 +549,8 @@ if __name__ == "__main__":
     print('Command line input: ' + cmd_input + ' is saved.')  # Save the command in log file
     with open(log_file, 'a') as f:
         f.write('\n' + cmd_input)
+        print("Parameter setting:", file=f)
+        print(*[str(param) + "=" + str(value) for param, value in vars(args).items()], sep='\n', file=f)
 
     # Initiate Logger, which records the results on the fly and finally output to the log file.
     # i.e., the mean and std of the metric values over multiple runs.
