@@ -284,6 +284,7 @@ def compute_base_sensitivity(num_message_passing_steps, max_degree):
 
     num_message_passing_steps = num_message_passing_steps
     max_node_degree = max_degree
+    max_node_degree = 2 * max_node_degree ** 2
 
     if num_message_passing_steps == 1:
         return float(2 * (max_node_degree + 1))
