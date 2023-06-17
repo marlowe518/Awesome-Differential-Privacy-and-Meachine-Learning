@@ -2,6 +2,8 @@ import argparse
 import time
 import os, sys
 import os.path as osp
+
+sys.path.append("D:\opensource\jeff\Awesome-Differential-Privacy-and-Meachine-Learning")
 from shutil import copy
 import copy as cp
 
@@ -42,24 +44,24 @@ from GNN.sampler import subsample_graph, subsample_graph_for_undirected_graph
 
 parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # Dataset Setting
-parser.add_argument('--data_name', type=str, default="Yeast")
+parser.add_argument('--data_name', type=str, default="Router")
 # parser.add_argument('--data_name', type=str, default="Power")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
                     help="which specific labeling trick to use")
-parser.add_argument('--num_hops', type=int, default=1)
+parser.add_argument('--num_hops', type=int, default=4)
 parser.add_argument('--use_feature', action='store_true',
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
-parser.add_argument('--max_node_degree', default=3)
+parser.add_argument('--max_node_degree', type=int, default=3)
 parser.add_argument('--check_degree_constrained', default=False)
 parser.add_argument('--check_degree_distribution', default=True)
 
 # GNN Setting
 parser.add_argument('--model', type=str, default="GCN")
 parser.add_argument('--sortpool_k', type=float, default=0.6)
-parser.add_argument('--num_layers', type=int, default=1)
+parser.add_argument('--num_layers', type=int, default=4)
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--hidden_channels', type=int, default=32)
 parser.add_argument('--train_percent', type=float, default=100)
@@ -73,7 +75,7 @@ parser.add_argument('--hitsK', default=50)
 # Training settings
 parser.add_argument('--lr', type=float, default=0.1)
 parser.add_argument('--momentum', type=float, default=0.9)
-parser.add_argument('--epochs', type=int, default=50)
+parser.add_argument('--epochs', type=int, default=5)
 parser.add_argument('--runs', type=int, default=1)
 parser.add_argument('--num_workers', type=int, default=0,
                     help="number of workers for dynamic mode; 0 if not dynamic")
@@ -81,7 +83,7 @@ parser.add_argument('--num_workers', type=int, default=0,
 # Privacy settings
 parser.add_argument('--lets_dp', type=bool, default=True)
 parser.add_argument('--max_norm', type=float, default=0.1)
-parser.add_argument('--sigma', type=float, default=1.)
+parser.add_argument('--sigma', type=float, default=0.2)
 parser.add_argument('--target_delta', type=float, default=1e-5)
 
 # Testing settings
@@ -166,6 +168,7 @@ class SEALDatasetSmall(InMemoryDataset):
 
         # Here we sample the positive and negative edges to meet the constraint of node degree.
         if self.split == "train":
+            key_results["original_edges"] = pos_edge.shape[1]
             # TODO: In the future, the pos edges can be sampled, and the train indices should be whole training graph (i.e., A_csc)
             pos_edge_degree_constrained: torch.Tensor = subsample_graph_for_undirected_graph(pos_edge,
                                                                                              max_degree=args.max_node_degree)
@@ -187,6 +190,7 @@ class SEALDatasetSmall(InMemoryDataset):
             assert scipy.linalg.issymmetric(self.A_csc.toarray()), "Train_net must be symmetric!"
             pos_edge = pos_edge_degree_constrained
             neg_edge = neg_edge_degree_constrained
+            key_results["sampled_edges"] = pos_edge.shape[1]
             with open(self.process_log_path, 'a') as f:
                 print("After edge sampling", file=f)
                 print(f"pos_edge nums:{pos_edge.shape[1]}", file=f)
@@ -219,10 +223,10 @@ class SEALDatasetSmall(InMemoryDataset):
                     print(f"Degree distribution:", file=f)
                     print(pd.value_counts(df["degree"]), file=f)
                     # print(pd.value_counts(df["binned"]), file=f)
-                plt.hist(degree_distribution, bins=len(df["degree"].unique()))
-                plt.xlabel("Degree")
-                plt.ylabel("Frequency")
-                plt.show()
+                # plt.hist(degree_distribution, bins=len(df["degree"].unique()))
+                # plt.xlabel("Degree")
+                # plt.ylabel("Frequency")
+                # plt.show()
 
         # ------------------------------------------------------------- #
         A_csr = self.A_csc.tocsr()
@@ -245,12 +249,14 @@ def compute_max_terms_per_node(num_message_passing_steps, max_node_degree):
     max_node_degree = 2 * max_node_degree ** 2
     if num_message_passing_steps == 1:
         return max_node_degree
-
     if num_message_passing_steps == 2:
         return max_node_degree ** 2 + max_node_degree
-
     if num_message_passing_steps == 3:
         return max_node_degree ** 3 + max_node_degree ** 2 + max_node_degree
+    if num_message_passing_steps == 4:
+        return max_node_degree ** 4 + max_node_degree ** 3 + max_node_degree ** 2 + max_node_degree
+    if num_message_passing_steps == 5:
+        return max_node_degree ** 5 + max_node_degree ** 4 + max_node_degree ** 3 + max_node_degree ** 2 + max_node_degree
 
 
 def compute_base_sensitivity(num_message_passing_steps, max_degree):
@@ -347,7 +353,7 @@ def train_with_dp(model, optimizer, train_dataset, epoch, emb=None):
         epsilon) + " | best_alpha: {:7.4f}".format(best_alpha))
     # print("epoch: {:3.0f}".format(epoch) + " | epsilon_org: {:10.7f}".format(
     #     epsilon_org) + " | best_alpha: {:7.4f}".format(best_alpha_org))
-    return train_loss
+    return train_loss, epsilon
 
 
 def eval_hits(y_pred_pos, y_pred_neg, K, type_info="torch"):
@@ -440,6 +446,7 @@ def main():
                                                       node_features=None,
                                                       percent=args.test_percent, split="test", directed=directed)
     test_dataset = test_dataset.shuffle()  # TODO
+    args.batch_size = min(args.batch_size, len(train_dataset))
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size,
                             num_workers=args.num_workers)
@@ -487,12 +494,13 @@ def main():
         start_epoch = 1
         for epoch in range(start_epoch, start_epoch + args.epochs):
             if args.lets_dp:
-                loss = train_with_dp(model, optimizer, train_dataset, epoch, emb)
+                loss, eps = train_with_dp(model, optimizer, train_dataset, epoch, emb)
             else:
                 loss = train(model, train_loader, optimizer, train_dataset, emb)
             if epoch % args.eval_steps == 0:
                 results = test(model, val_loader, test_loader, emb)
-
+                if args.lets_dp:
+                    results["EPS"] = (eps, eps)
                 # Record the results to logger
                 for key, result in results.items():
                     loggers[key].add_result(run, result)
@@ -515,6 +523,16 @@ def main():
             with open(log_file, 'a') as f:
                 print(key, file=f)
                 loggers[key].print_statistics(run, f=f)
+        if "AUC" in loggers and "EPS" in loggers:
+            argmax = loggers["AUC"].return_statistics(run)
+            val_res = loggers["AUC"].results[run][argmax][0]
+            test_res = loggers["AUC"].results[run][argmax][1]
+            eps = float(loggers["EPS"].results[run][argmax][0])
+
+            key_results["best_epoch"] = argmax
+            key_results["epsilon"] = eps
+            key_results["highest_val"] = val_res
+            key_results["final_test"] = test_res
 
     for key in loggers.keys():
         print(key)
@@ -525,8 +543,36 @@ def main():
     print(f'Total number of parameters is {total_params}')
     print(f'Results are saved in {args.res_dir}')
 
+    key_results["experiment"] = args.res_dir
+    key_results["max_node_degree"] = args.max_node_degree
+    key_results["num_hop"] = args.num_hops
+    key_results["max_term_per_edge"] = compute_max_terms_per_node(max_node_degree=args.max_node_degree,
+                                                                  num_message_passing_steps=args.num_layers)
+    key_results["sigma"] = args.sigma
+    key_results["dataset"] = args.data_name
+    key_results["train_samples"] = len(train_dataset)
+    with open(log_file, 'a') as f:
+        print(key_results, file=f)
+    save_results(args.res_dir + "/key_results.pickle", key_results)
+
+
+def save_results(file_path, obj):
+    import pickle
+
+    with open(file_path, 'wb') as handle:
+        pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open(file_path, 'rb') as handle:
+        b = pickle.load(handle)
+        print(f"results:{b}")
+
 
 if __name__ == "__main__":
+    # Key results
+    key_results = dict.fromkeys(
+        ["dataset", "experiment", "max_node_degree",
+         "num_hop", "highest_val", "final_test", "best_epoch",
+         "original_edges", "sampled_edges", "max_term_per_edge", "epsilon", "sigma"])
     # Create the path for saving data and log
     if args.save_appendix == '':
         args.save_appendix = '_' + time.strftime("%Y%m%d%H%M%S")  # Mark the time
@@ -558,6 +604,8 @@ if __name__ == "__main__":
         loggers = {
             'AUC': Logger(args.runs, args),
         }
+        if args.lets_dp:
+            loggers["EPS"] = Logger(args.runs, args)
     else:
         raise ValueError(f"Invalid eval_metric {args.eval_metric}!")
 
