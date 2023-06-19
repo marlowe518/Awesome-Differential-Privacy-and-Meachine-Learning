@@ -69,15 +69,6 @@ class SEALDataset(InMemoryDataset):
                                                self.data.edge_index,
                                                self.data.num_nodes,
                                                self.percent)
-        from torch_geometric.utils import is_undirected, to_undirected
-        if not is_undirected(pos_edge):
-            pos_edge = to_undirected(pos_edge)
-        if not is_undirected(neg_edge):
-            neg_edge = to_undirected(neg_edge)
-        # from GNN.sampler import subsample_graph_for_undirected_graph
-        # pos_edge = subsample_graph_for_undirected_graph(pos_edge, 10)
-        # neg_edge = subsample_graph_for_undirected_graph(neg_edge, 10)
-
         if self.use_coalesce:  # compress mutli-edge into edge with weight
             self.data.edge_index, self.data.edge_weight = coalesce(
                 self.data.edge_index, self.data.edge_weight,
@@ -352,7 +343,7 @@ parser.add_argument('--model', type=str, default='GCN')
 parser.add_argument('--sortpool_k', type=float, default=0.6)
 parser.add_argument('--num_layers', type=int, default=3)
 parser.add_argument('--hidden_channels', type=int, default=32)
-parser.add_argument('--batch_size', type=int, default=1024)
+parser.add_argument('--batch_size', type=int, default=128)
 # Subgraph extraction settings
 parser.add_argument('--num_hops', type=int, default=3)
 parser.add_argument('--ratio_per_hop', type=float, default=1.0)
@@ -372,14 +363,18 @@ parser.add_argument('--runs', type=int, default=1)
 # parser.add_argument('--train_percent', type=float, default=100)
 # parser.add_argument('--val_percent', type=float, default=100)
 # parser.add_argument('--test_percent', type=float, default=100)
-parser.add_argument('--train_percent', type=float, default=0.3)
-parser.add_argument('--val_percent', type=float, default=0.3)
-parser.add_argument('--test_percent', type=float, default=0.3)
-parser.add_argument('--dynamic_train', action='store_true',
+parser.add_argument('--train_percent', type=float, default=15)
+parser.add_argument('--val_percent', type=float, default=15)
+parser.add_argument('--test_percent', type=float, default=15)
+# parser.add_argument('--dynamic_train', action='store_true',
+#                     help="dynamically extract enclosing subgraphs on the fly")
+# parser.add_argument('--dynamic_val', action='store_true')
+# parser.add_argument('--dynamic_test', action='store_true')
+parser.add_argument('--dynamic_train', default=True,
                     help="dynamically extract enclosing subgraphs on the fly")
-parser.add_argument('--dynamic_val', action='store_true')
-parser.add_argument('--dynamic_test', action='store_true')
-parser.add_argument('--num_workers', type=int, default=16,
+parser.add_argument('--dynamic_val', default=True)
+parser.add_argument('--dynamic_test', default=True)
+parser.add_argument('--num_workers', type=int, default=0,
                     help="number of workers for dynamic mode; 0 if not dynamic")
 parser.add_argument('--train_node_embedding', action='store_true',
                     help="also train free-parameter node embeddings together with GNN")

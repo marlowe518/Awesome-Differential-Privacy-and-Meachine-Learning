@@ -50,18 +50,18 @@ parser.add_argument('--data_name', type=str, default="Router")
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
                     help="which specific labeling trick to use")
-parser.add_argument('--num_hops', type=int, default=4)
+parser.add_argument('--num_hops', type=int, default=1)
 parser.add_argument('--use_feature', action='store_true',
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
-parser.add_argument('--max_node_degree', type=int, default=3)
+parser.add_argument('--max_node_degree', type=int, default=5)
 parser.add_argument('--check_degree_constrained', default=False)
 parser.add_argument('--check_degree_distribution', default=True)
 
 # GNN Setting
 parser.add_argument('--model', type=str, default="GCN")
 parser.add_argument('--sortpool_k', type=float, default=0.6)
-parser.add_argument('--num_layers', type=int, default=4)
+parser.add_argument('--num_layers', type=int, default=1)
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--hidden_channels', type=int, default=32)
 parser.add_argument('--train_percent', type=float, default=100)
@@ -75,7 +75,7 @@ parser.add_argument('--hitsK', default=50)
 # Training settings
 parser.add_argument('--lr', type=float, default=0.1)
 parser.add_argument('--momentum', type=float, default=0.9)
-parser.add_argument('--epochs', type=int, default=5)
+parser.add_argument('--epochs', type=int, default=50)
 parser.add_argument('--runs', type=int, default=1)
 parser.add_argument('--num_workers', type=int, default=0,
                     help="number of workers for dynamic mode; 0 if not dynamic")
@@ -83,7 +83,7 @@ parser.add_argument('--num_workers', type=int, default=0,
 # Privacy settings
 parser.add_argument('--lets_dp', type=bool, default=True)
 parser.add_argument('--max_norm', type=float, default=0.1)
-parser.add_argument('--sigma', type=float, default=0.2)
+parser.add_argument('--sigma', type=float, default=0.0002)
 parser.add_argument('--target_delta', type=float, default=1e-5)
 
 # Testing settings
@@ -248,15 +248,19 @@ class SEALDatasetSmall(InMemoryDataset):
 def compute_max_terms_per_node(num_message_passing_steps, max_node_degree):
     max_node_degree = 2 * max_node_degree ** 2
     if num_message_passing_steps == 1:
-        return max_node_degree
-    if num_message_passing_steps == 2:
-        return max_node_degree ** 2 + max_node_degree
-    if num_message_passing_steps == 3:
-        return max_node_degree ** 3 + max_node_degree ** 2 + max_node_degree
-    if num_message_passing_steps == 4:
-        return max_node_degree ** 4 + max_node_degree ** 3 + max_node_degree ** 2 + max_node_degree
-    if num_message_passing_steps == 5:
-        return max_node_degree ** 5 + max_node_degree ** 4 + max_node_degree ** 3 + max_node_degree ** 2 + max_node_degree
+        max_terms_per_node = max_node_degree
+    elif num_message_passing_steps == 2:
+        max_terms_per_node = max_node_degree ** 2 + max_node_degree
+    elif num_message_passing_steps == 3:
+        max_terms_per_node = max_node_degree ** 3 + max_node_degree ** 2 + max_node_degree
+    elif num_message_passing_steps == 4:
+        max_terms_per_node = max_node_degree ** 4 + max_node_degree ** 3 + max_node_degree ** 2 + max_node_degree
+    elif num_message_passing_steps == 5:
+        max_terms_per_node = max_node_degree ** 5 + max_node_degree ** 4 + max_node_degree ** 3 + max_node_degree ** 2 + max_node_degree
+    else:
+        raise ValueError(f"invalid num_message_passing_node {num_message_passing_steps}")
+    max_terms_per_node = min(max_terms_per_node, args.batch_size)
+    return max_terms_per_node
 
 
 def compute_base_sensitivity(num_message_passing_steps, max_degree):
