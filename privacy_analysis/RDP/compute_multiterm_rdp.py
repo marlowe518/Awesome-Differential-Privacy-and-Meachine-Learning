@@ -25,6 +25,7 @@ def compute_base_sensitivity(num_message_passing_steps, max_degree):
 
 def compute_multiterm_rdp(orders, num_training_steps, noise_multiplier, num_samples, max_terms_per_node, batch_size):
     terms_rv = scipy.stats.hypergeom(num_samples, max_terms_per_node, batch_size)
+    max_terms_per_node = min(max_terms_per_node, batch_size)
     terms_logprobs = [
         terms_rv.logpmf(i) for i in np.arange(max_terms_per_node + 1)
     ]

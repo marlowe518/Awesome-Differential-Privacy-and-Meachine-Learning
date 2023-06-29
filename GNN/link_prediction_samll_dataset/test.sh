@@ -1,0 +1,2 @@
+conda activate torch_gpu
+python seal_link_pred_for_small_data_with_dp.py

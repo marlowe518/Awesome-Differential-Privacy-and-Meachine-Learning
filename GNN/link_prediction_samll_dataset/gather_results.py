@@ -13,16 +13,19 @@ def save_results(file_path, obj):
 def load_results(file_path):
     with open(file_path, 'rb') as handle:
         b = pickle.load(handle)
-        print(f"results:{b}")
+        # print(f"results:{b}")
     return b
 
 
 if __name__ == "__main__":
     all_dicts = []
+    begin_date = ["20230626", "20230627"]
     for res_file_dir in os.listdir('./results'):
-        res_file = f"./results/{res_file_dir}/key_results.pickle"
-        if os.path.isfile(res_file):
-            all_dicts.append(load_results(res_file))
+        for date in begin_date:
+            if date in res_file_dir:  # TODO 改为大于该日期
+                res_file = f"./results/{res_file_dir}/key_results.pickle"
+                if os.path.isfile(res_file):
+                    all_dicts.append(load_results(res_file))
 
     from collections import defaultdict
 

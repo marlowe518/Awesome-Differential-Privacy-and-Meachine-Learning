@@ -1,270 +1,162 @@
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name NS --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Ecoli --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 1 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 2 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 3 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 3 --lr 0.001 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.1 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.1 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.01 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.01 --sigma 2.0
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.001 --sigma 0.2
-python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 3 --lr 0.001 --sigma 2.0
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Power --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Router --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 5 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 7 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 1 --num_layers 1 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 2 --num_layers 2 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 0.001 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 0.01 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 0.1 --batch_size 32 --uniq_appendix '_improved'
+python seal_link_pred_for_small_data_with_dp.py --data_name Yeast --num_hops 3 --num_layers 3 --max_node_degree 10 --lr 1.0 --sigma 0.2 --max_norm 1.0 --batch_size 32 --uniq_appendix '_improved'

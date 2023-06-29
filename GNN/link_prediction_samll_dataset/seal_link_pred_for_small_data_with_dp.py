@@ -12,6 +12,8 @@ from tqdm import tqdm
 import pdb
 
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score
 import scipy.sparse as ssp
 import torch
@@ -44,24 +46,25 @@ from GNN.sampler import subsample_graph, subsample_graph_for_undirected_graph
 
 parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # Dataset Setting
+# parser.add_argument('--data_name', type=str, default="Yeast")
 parser.add_argument('--data_name', type=str, default="Router")
-# parser.add_argument('--data_name', type=str, default="Power")
+parser.add_argument('--uniq_appendix', type=str, default="_improved")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
                     help="which specific labeling trick to use")
-parser.add_argument('--num_hops', type=int, default=1)
+parser.add_argument('--num_hops', type=int, default=3)
 parser.add_argument('--use_feature', action='store_true',
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
-parser.add_argument('--max_node_degree', type=int, default=5)
+parser.add_argument('--max_node_degree', type=int, default=10)
 parser.add_argument('--check_degree_constrained', default=False)
 parser.add_argument('--check_degree_distribution', default=True)
 
 # GNN Setting
 parser.add_argument('--model', type=str, default="GCN")
 parser.add_argument('--sortpool_k', type=float, default=0.6)
-parser.add_argument('--num_layers', type=int, default=1)
+parser.add_argument('--num_layers', type=int, default=3)
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--hidden_channels', type=int, default=32)
 parser.add_argument('--train_percent', type=float, default=100)
@@ -73,17 +76,19 @@ parser.add_argument('--eval_metric', default="auc")
 parser.add_argument('--hitsK', default=50)
 
 # Training settings
-parser.add_argument('--lr', type=float, default=0.1)
+parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--momentum', type=float, default=0.9)
 parser.add_argument('--epochs', type=int, default=50)
 parser.add_argument('--runs', type=int, default=1)
 parser.add_argument('--num_workers', type=int, default=0,
                     help="number of workers for dynamic mode; 0 if not dynamic")
+parser.add_argument('--micro_batch', type=bool, default=True, help="non-dp training with microbatch")
+parser.add_argument('--dp_no_noise', type=bool, default=False, help="dp training without noise")
 
 # Privacy settings
 parser.add_argument('--lets_dp', type=bool, default=True)
-parser.add_argument('--max_norm', type=float, default=0.1)
-parser.add_argument('--sigma', type=float, default=0.0002)
+parser.add_argument('--max_norm', type=float, default=1.)
+parser.add_argument('--sigma', type=float, default=2.)
 parser.add_argument('--target_delta', type=float, default=1e-5)
 
 # Testing settings
@@ -111,6 +116,16 @@ def load_data(data_name):
     mat_data = sio.loadmat(f"./data/processed_data/{data_name}_train.mat")
     A_csc = mat_data["net"]
     return A_csc, split_edge
+
+
+def inspect_data_frequency_distribution(values, bin_nums=10, title=""):
+    bins = pd.cut(values, bins=bin_nums)
+    print("bin_counts\n", bins.value_counts())
+    plt.hist(values, bins=bin_nums)
+    plt.title(title)
+    plt.xlabel("value")
+    plt.ylabel("counts")
+    plt.show()
 
 
 class SEALDatasetSmall(InMemoryDataset):
@@ -179,7 +194,6 @@ class SEALDatasetSmall(InMemoryDataset):
             random.shuffle(indexes)
             pos_edge_degree_constrained = pos_edge_degree_constrained[:, indexes]
             neg_edge_degree_constrained = neg_edge_degree_constrained[:, indexes]
-
             degree_constrained_csc_mat = ssp.csc_matrix((np.ones(len(pos_edge_degree_constrained[0])),
                                                          (pos_edge_degree_constrained[0],
                                                           pos_edge_degree_constrained[1])),
@@ -216,14 +230,18 @@ class SEALDatasetSmall(InMemoryDataset):
             if args.check_degree_distribution:
                 import matplotlib.pyplot as plt
                 import pandas as pd
-                degree_distribution = np.array(self.A_csc.sum(axis=1)).reshape(-1)
-                df = pd.DataFrame(degree_distribution, columns=["degree"])
+                out_degree_distribution = np.array(self.A_csc.sum(axis=1)).reshape(-1)
+                in_degree_distribution = np.array(self.A_csc.sum(axis=0)).reshape(-1)
+                df = pd.DataFrame(out_degree_distribution, columns=["out_degree"])
+                df["in_degree"] = in_degree_distribution
                 # df["binned"] = pd.cut(degree_distribution, bins=10)
                 with open(self.process_log_path, 'a') as f:
-                    print(f"Degree distribution:", file=f)
-                    print(pd.value_counts(df["degree"]), file=f)
+                    print(f"Out degree distribution:", file=f)
+                    print(pd.value_counts(df["out_degree"]), file=f)
+                    print(f"In degree distribution:", file=f)
+                    print(pd.value_counts(df["in_degree"]), file=f)
                     # print(pd.value_counts(df["binned"]), file=f)
-                # plt.hist(degree_distribution, bins=len(df["degree"].unique()))
+                # plt.hist(in_degree_distribution, bins=len(df["in_degree"].unique()))
                 # plt.xlabel("Degree")
                 # plt.ylabel("Frequency")
                 # plt.show()
@@ -245,22 +263,11 @@ class SEALDatasetSmall(InMemoryDataset):
         del pos_list, neg_list
 
 
-def compute_max_terms_per_node(num_message_passing_steps, max_node_degree):
+def compute_max_terms_per_edge(num_message_passing_steps, max_node_degree):
     max_node_degree = 2 * max_node_degree ** 2
-    if num_message_passing_steps == 1:
-        max_terms_per_node = max_node_degree
-    elif num_message_passing_steps == 2:
-        max_terms_per_node = max_node_degree ** 2 + max_node_degree
-    elif num_message_passing_steps == 3:
-        max_terms_per_node = max_node_degree ** 3 + max_node_degree ** 2 + max_node_degree
-    elif num_message_passing_steps == 4:
-        max_terms_per_node = max_node_degree ** 4 + max_node_degree ** 3 + max_node_degree ** 2 + max_node_degree
-    elif num_message_passing_steps == 5:
-        max_terms_per_node = max_node_degree ** 5 + max_node_degree ** 4 + max_node_degree ** 3 + max_node_degree ** 2 + max_node_degree
-    else:
-        raise ValueError(f"invalid num_message_passing_node {num_message_passing_steps}")
-    max_terms_per_node = min(max_terms_per_node, args.batch_size)
-    return max_terms_per_node
+    max_terms_per_edge = sum([max_node_degree ** i for i in range(1, num_message_passing_steps + 1)])
+    # max_terms_per_edge = min(max_terms_per_edge, args.batch_size)  # Bounded by batch_size
+    return max_terms_per_edge
 
 
 def compute_base_sensitivity(num_message_passing_steps, max_degree):
@@ -269,8 +276,9 @@ def compute_base_sensitivity(num_message_passing_steps, max_degree):
     Args:
 
     """
-    max_term_per_node = compute_max_terms_per_node(num_message_passing_steps, max_degree)
-    return float(2 * max_term_per_node)
+    max_terms_per_edge = compute_max_terms_per_edge(num_message_passing_steps, max_degree)
+    max_terms_per_edge = min(max_terms_per_edge, args.batch_size)
+    return float(2 * max_terms_per_edge)
 
 
 def train_dynamic_add_noise(model, train_loader, optimizer, criterion, full_batch=False):
@@ -300,11 +308,15 @@ def train_dynamic_add_noise(model, train_loader, optimizer, criterion, full_batc
             node_id = data_microbatch.node_id if emb else None
             logits = model(data_microbatch.z, data_microbatch.edge_index, data_microbatch.batch, x, edge_weight,
                            node_id, micro_batch=True)
-            loss = criterion(logits.view(-1), data_microbatch.y.to(torch.float))
+            # loss = criterion(logits.view(-1), data_microbatch.y.to(torch.float))
+            loss = BCEWithLogitsLoss()(logits.view(-1), data_microbatch.y.to(torch.float))
             loss.backward()  # 梯度求导，这边求出梯度
             optimizer.microbatch_step()  # 这个step做的是每个样本的梯度裁剪和梯度累加的操作
             train_loss += loss.item()
-        optimizer.step_dp()  # 这个做的是梯度加噪和梯度平均更新下降的操作
+        if args.dp_no_noise:
+            optimizer.step_dp(no_noise=True)  # 这个做的是梯度加噪和梯度平均更新下降的操作 TODO Remove the "no_noise" attribute
+        else:
+            optimizer.step_dp()
     return train_loss / len(train_loader.dataset), train_acc  # 返回平均损失和平均准确率
 
 
@@ -324,7 +336,8 @@ def train(model, train_loader, optimizer, train_dataset, emb=None):
         loss.backward()
         optimizer.step()
         total_loss += loss.item() * data.num_graphs
-
+        if args.micro_batch:
+            break
     return total_loss / len(train_dataset)
 
 
@@ -342,12 +355,12 @@ def train_with_dp(model, optimizer, train_dataset, epoch, emb=None):
     from privacy_analysis.RDP.compute_multiterm_rdp import compute_multiterm_rdp
     from privacy_analysis.RDP.rdp_convert_dp import compute_eps
     orders = np.arange(1, 10, 0.1)[1:]
-    max_terms_per_node = compute_max_terms_per_node(num_message_passing_steps=args.num_layers,
+    max_terms_per_edge = compute_max_terms_per_edge(num_message_passing_steps=args.num_layers,
                                                     max_node_degree=args.max_node_degree)
-    max_terms_per_node = min(max_terms_per_node, len(train_dataset)) - 1
+    max_terms_per_edge = min(max_terms_per_edge, len(train_dataset))
     # assert max_terms_per_node <= len(train_dataset), "#affected terms must <= #samples"
     rdp_every_epoch = compute_multiterm_rdp(orders, epoch, args.sigma, len(train_dataset),
-                                            max_terms_per_node, args.batch_size)
+                                            max_terms_per_edge, args.batch_size)
 
     from privacy_analysis.RDP.compute_rdp import compute_rdp
     rdp_every_epoch_org = compute_rdp(args.batch_size / len(train_dataset), args.sigma, 1 * epoch, orders)
@@ -382,6 +395,13 @@ def eval_hits(y_pred_pos, y_pred_neg, K, type_info="torch"):
         hitsK = float(np.sum(y_pred_pos > kth_score_in_negative_edges)) / len(y_pred_pos)
 
     return {'hits@{}'.format(K): hitsK}
+
+
+def plot_roc_curve(true, pred):
+    from sklearn.metrics import roc_curve
+    fpr, tpr, threshold = roc_curve(true, pred)
+    plt.plot(fpr, tpr)
+    plt.show()
 
 
 @torch.no_grad()
@@ -479,11 +499,11 @@ def main():
                 momentum=args.momentum
             )
             print(f"Number of train samples:{len(train_dataset)}")
-            print(f"Max term per edges:{compute_max_terms_per_node(args.num_layers, args.max_node_degree)}")
+            print(f"Max term per edges:{compute_max_terms_per_edge(args.num_layers, args.max_node_degree)}")
             print(f"Sens:{sens}")
             with open(log_file, 'a') as f:
                 print(f"Number of train samples:{len(train_dataset)}", file=f)
-                print(f"Max term per edges:{compute_max_terms_per_node(args.num_layers, args.max_node_degree)}", file=f)
+                print(f"Max term per edges:{compute_max_terms_per_edge(args.num_layers, args.max_node_degree)}", file=f)
                 print(f"Sens:{sens}", file=f)
         else:
             optimizer = torch.optim.SGD(params=parameters, lr=args.lr, momentum=args.momentum)
@@ -537,6 +557,7 @@ def main():
             key_results["epsilon"] = eps
             key_results["highest_val"] = val_res
             key_results["final_test"] = test_res
+            key_results["val_test_trend"] = loggers["AUC"].results[run]
 
     for key in loggers.keys():
         print(key)
@@ -550,9 +571,14 @@ def main():
     key_results["experiment"] = args.res_dir
     key_results["max_node_degree"] = args.max_node_degree
     key_results["num_hop"] = args.num_hops
-    key_results["max_term_per_edge"] = compute_max_terms_per_node(max_node_degree=args.max_node_degree,
+    key_results["max_term_per_edge"] = compute_max_terms_per_edge(max_node_degree=args.max_node_degree,
                                                                   num_message_passing_steps=args.num_layers)
+    key_results["sens"] = compute_base_sensitivity(max_degree=args.max_node_degree,
+                                                   num_message_passing_steps=args.num_layers)
+    key_results["lr"] = args.lr
     key_results["sigma"] = args.sigma
+    key_results["max_norm"] = args.max_norm
+    key_results["batch_size"] = args.batch_size
     key_results["dataset"] = args.data_name
     key_results["train_samples"] = len(train_dataset)
     with open(log_file, 'a') as f:
@@ -581,7 +607,7 @@ if __name__ == "__main__":
     if args.save_appendix == '':
         args.save_appendix = '_' + time.strftime("%Y%m%d%H%M%S")  # Mark the time
     if args.data_appendix == '':  # Create the data save path
-        args.data_appendix = '_d{}_h{}'.format(args.max_node_degree, args.num_hops)
+        args.data_appendix = '_d{}_h{}{}'.format(args.max_node_degree, args.num_hops, args.uniq_appendix)
     # Results include the log, running command, etc.
     args.res_dir = os.path.join('results/{}{}'.format(args.data_name, args.save_appendix))
     if not os.path.exists(args.res_dir):  # Create the result directory
