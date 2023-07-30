@@ -46,24 +46,25 @@ from GNN.sampler import subsample_graph, subsample_graph_for_undirected_graph
 
 parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # Dataset Setting
-parser.add_argument('--data_name', type=str, default="Yeast")
+# parser.add_argument('--data_name', type=str, default="Yeast")
 # parser.add_argument('--data_name', type=str, default="Router")
 # parser.add_argument('--data_name', type=str, default="USAir")
-# parser.add_argument('--data_name', type=str, default="NS")
-
+parser.add_argument('--data_name', type=str, default="NS")
 
 parser.add_argument('--uniq_appendix', type=str, default="20230730")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
                     help="which specific labeling trick to use")
-parser.add_argument('--num_hops', type=int, default=1)
+parser.add_argument('--num_hops', type=int, default=0,
+                    help="num_hops is the path length in path subgraph while in neighborhood it is the radius of neighborhood")
 parser.add_argument('--use_feature', action='store_true',
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
-parser.add_argument('--max_node_degree', type=int, default=10000)
+parser.add_argument('--max_node_degree', type=int, default=10)
 parser.add_argument('--check_degree_constrained', default=False)
 parser.add_argument('--check_degree_distribution', default=True)
+parser.add_argument('--neighborhood_subgraph', default=False)
 
 # GNN Setting
 parser.add_argument('--model', type=str, default="GCN")
@@ -90,7 +91,7 @@ parser.add_argument('--micro_batch', type=bool, default=True, help="non-dp train
 parser.add_argument('--dp_no_noise', type=bool, default=False, help="dp training without noise")
 
 # Privacy settings
-parser.add_argument('--lets_dp', type=bool, default=False)
+parser.add_argument('--lets_dp', type=bool, default=True)
 parser.add_argument('--max_norm', type=float, default=1.)
 parser.add_argument('--sigma', type=float, default=1.)
 parser.add_argument('--target_delta', type=float, default=1e-5)
@@ -279,15 +280,18 @@ class SEALDatasetSmall(InMemoryDataset):
 #     # max_terms_per_edge = min(max_terms_per_edge, args.batch_size)  # Bounded by batch_size
 #     return max_terms_per_edge
 
-def compute_max_terms_per_edge(num_message_passing_steps, max_node_degree, path_subgraph=True):
+def compute_max_terms_per_edge(num_message_passing_steps, max_node_degree, num_hops=None, path_subgraph=True):
     if path_subgraph:
-        path_length = num_message_passing_steps
-        return compute_max_terms_per_edge_for_path(path_length, max_node_degree)
+        return compute_max_terms_per_edge_for_path(num_hops, max_node_degree)
     else:
         return 2 * max_node_degree
 
 
-def compute_max_terms_per_edge_for_path(path_length, max_node_degree, lamda=1):
+def compute_max_terms_per_edge_for_path(num_hops, max_node_degree, lamda=1):
+    if num_hops == 0:
+        path_length = 2
+    else:
+        path_length = 2 * num_hops + 1
     max_terms = 0
     for i in range(path_length):
         head_node_num = min((1 + lamda) * max_node_degree, max_node_degree ** i)
@@ -308,6 +312,8 @@ def tranfrom_edge_to_csc(pos_edge):
 
 def parameter_selection_loss(path_length, max_node_degree, A_csc, split_edge,
                              epsilon, beta_1, beta_2, gamma=0.001, lamda=1, differentially_private=False):
+    if path_length == 0:
+        path_length = 1
     max_terms = compute_max_terms_per_edge_for_path(path_length, max_node_degree, lamda)
     pos_edge_nums = split_edge["train"]["edge"].shape[0]
     per_node_out_degree_distribution = np.array(A_csc.sum(axis=1)).reshape(-1)
@@ -323,7 +329,7 @@ def parameter_selection_loss(path_length, max_node_degree, A_csc, split_edge,
         node_over_max_node_degree_num += np.random.laplace(0, 2 / (epsilon * beta_2))
         max_degree += np.random.laplace(0, 1 / epsilon * (1 - beta_1 - beta_2))
     effective_sample_nums = (1 - gamma ** path_length) * (1 + lamda) * (
-            pos_edge_nums - node_over_max_node_degree_num * ((max_degree - max_node_degree) / 10))
+            pos_edge_nums - node_over_max_node_degree_num * ((max_degree - max_node_degree) / 2))
     effective_sample_nums = round(effective_sample_nums)
     loss = max_terms / effective_sample_nums
     return loss
@@ -335,7 +341,7 @@ def compute_base_sensitivity(num_message_passing_steps, max_degree):
     Args:
 
     """
-    max_terms_per_edge = compute_max_terms_per_edge(num_message_passing_steps, max_degree)
+    max_terms_per_edge = compute_max_terms_per_edge(num_message_passing_steps, max_degree, num_hops=args.num_hops)
     max_terms_per_edge = min(max_terms_per_edge, args.batch_size)
     return float(2 * max_terms_per_edge)
 
@@ -415,7 +421,8 @@ def train_with_dp(model, optimizer, train_dataset, epoch, emb=None):
     from privacy_analysis.RDP.rdp_convert_dp import compute_eps
     orders = np.arange(1, 10, 0.1)[1:]
     max_terms_per_edge = compute_max_terms_per_edge(num_message_passing_steps=args.num_layers,
-                                                    max_node_degree=args.max_node_degree)
+                                                    max_node_degree=args.max_node_degree,
+                                                    num_hops=args.num_hops)
     max_terms_per_edge = min(max_terms_per_edge, len(train_dataset))
     # assert max_terms_per_node <= len(train_dataset), "#affected terms must <= #samples"
     rdp_every_epoch = compute_multiterm_rdp(orders, epoch, args.sigma, len(train_dataset),
@@ -517,6 +524,9 @@ def main():
     np.random.seed(1234)
     random.seed(1234)
     A_csc, split_edge = load_data(args.data_name)
+    loss_indicator = parameter_selection_loss(args.num_hops, args.max_node_degree, A_csc, split_edge, epsilon=1,
+                                              beta_1=0.3, beta_2=0.3,
+                                              differentially_private=False)
     train_dataset: SEALDatasetSmall = SEALDatasetSmall(dataset_path, A_csc, split_edge, args.num_hops,
                                                        node_features=None,
                                                        percent=args.train_percent, split="train", directed=directed)
@@ -557,11 +567,14 @@ def main():
                 momentum=args.momentum
             )
             print(f"Number of train samples:{len(train_dataset)}")
-            print(f"Max term per edges:{compute_max_terms_per_edge(args.num_layers, args.max_node_degree)}")
+            print(
+                f"Max term per edges:{compute_max_terms_per_edge(args.num_layers, args.max_node_degree, args.num_hops)}")
             print(f"Sens:{sens}")
             with open(log_file, 'a') as f:
                 print(f"Number of train samples:{len(train_dataset)}", file=f)
-                print(f"Max term per edges:{compute_max_terms_per_edge(args.num_layers, args.max_node_degree)}", file=f)
+                print(
+                    f"Max term per edges:{compute_max_terms_per_edge(args.num_layers, args.max_node_degree, args.num_hops)}",
+                    file=f)
                 print(f"Sens:{sens}", file=f)
         else:
             optimizer = torch.optim.SGD(params=parameters, lr=args.lr, momentum=args.momentum)
@@ -616,6 +629,7 @@ def main():
             key_results["highest_val"] = val_res
             key_results["final_test"] = test_res
             key_results["val_test_trend"] = loggers["AUC"].results[run]
+            key_results["eps_trend"] = loggers["EPS"].results[run]
 
     for key in loggers.keys():
         print(key)
@@ -630,7 +644,8 @@ def main():
     key_results["max_node_degree"] = args.max_node_degree
     key_results["num_hop"] = args.num_hops
     key_results["max_term_per_edge"] = compute_max_terms_per_edge(max_node_degree=args.max_node_degree,
-                                                                  num_message_passing_steps=args.num_layers)
+                                                                  num_message_passing_steps=args.num_layers,
+                                                                  num_hops=args.num_hops)
     key_results["sens"] = compute_base_sensitivity(max_degree=args.max_node_degree,
                                                    num_message_passing_steps=args.num_layers)
     key_results["lr"] = args.lr
@@ -639,6 +654,7 @@ def main():
     key_results["batch_size"] = args.batch_size
     key_results["dataset"] = args.data_name
     key_results["train_samples"] = len(train_dataset)
+    key_results["parameter_indicator"] = loss_indicator
     with open(log_file, 'a') as f:
         print(key_results, file=f)
     save_results(args.res_dir + "/key_results.pickle", key_results)
@@ -656,6 +672,9 @@ def save_results(file_path, obj):
 
 
 if __name__ == "__main__":
+    # Check the correctness of parameters
+    if not args.lets_dp:
+        args.max_node_degree = 10000  # non-private method use all edges
     # Key results
     key_results = dict.fromkeys(
         ["dataset", "experiment", "max_node_degree",

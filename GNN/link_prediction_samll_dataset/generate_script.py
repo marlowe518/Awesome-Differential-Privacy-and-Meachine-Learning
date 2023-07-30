@@ -3,16 +3,17 @@ import time
 
 def generate_script():
     with open(f"./running_{time.strftime('%Y%m%d%H%M%S')}.sh", "w") as f:
-        for dataset in ["NS", "Ecoli", "Power", "Router", "Yeast"]:
+        # for dataset in ["NS", "Ecoli", "Power", "Router", "Yeast"]:
+        for dataset in ["NS"]:
             # for dataset in ["Yeast"]:
             # for dataset in ["Router"]:
-            for max_node_degree in [10, 20, 30]:
-                for num_hops in [1]:
+            for max_node_degree in [2, 5, 7, 10, 20, 30]:
+                for num_hops in [0, 1, 2]:
                     # for lr in [0.001, 0.01, 0.1, 1.]:
-                    for lr in [0.001, 0.01]:
+                    for lr in [0.001]:
                         # for sigma in [0.2, 2.]:
-                        for sigma in [1., 2.]:
-                            for max_norm in [0.1, 1.]:
+                        for sigma in [1.]:
+                            for max_norm in [1.]:
                                 for batch_size in [32]:
                                     print(" ".join(["python", "seal_link_pred_for_small_data_with_dp.py",
                                                     f"--data_name {dataset}",
@@ -23,7 +24,7 @@ def generate_script():
                                                     f"--sigma {sigma}",
                                                     f"--max_norm {max_norm}",
                                                     f"--batch_size {batch_size}",
-                                                    f"--uniq_appendix '_20230714'"]), file=f, )
+                                                    f"--uniq_appendix '_20230731'"]), file=f, )
 
 
 # def split_script():

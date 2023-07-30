@@ -70,10 +70,16 @@ def k_hop_subgraph(src, dst, num_hops, A, sample_ratio=1.0,
     nodes = [src, dst]
     visited = {src, dst}  # node set
     # fringe = {src, dst}
-    for dist in range(1, num_hops + 1):
+    if num_hops == 0:
+        real_num_hops = 1  # 实际的情况
+    else:
+        real_num_hops = num_hops
+    for dist in range(1, real_num_hops + 1):
         # maximum_path_length = math.ceil(dist * 2)
-        # maximum_path_length = dist * 2 + 1
-        maximum_path_length = dist * 2
+        if num_hops == 0:
+            maximum_path_length = dist * 2
+        else:
+            maximum_path_length = dist * 2 + 1
         paths = nx.all_simple_paths(nx_graph, source=src, target=dst, cutoff=maximum_path_length)
         path_generator[dist] = paths
         for path in map(nx.utils.pairwise, paths):
@@ -98,7 +104,7 @@ def k_hop_subgraph(src, dst, num_hops, A, sample_ratio=1.0,
     edge_weight = [0, 0] + [1] * len(all_paths) * 2
     subgraph = ssp.csr_matrix(
         (edge_weight, (undirected_edges[0], undirected_edges[1])),
-    ) # 先按照原来的index构建一个冗余的矩阵
+    )  # 先按照原来的index构建一个冗余的矩阵
     subgraph = subgraph[nodes, :][:, nodes]  # 根据nodes将子矩阵从冗余矩阵中取出
     debug = False
     if debug:
