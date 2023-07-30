@@ -46,25 +46,29 @@ from GNN.sampler import subsample_graph, subsample_graph_for_undirected_graph
 
 parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # Dataset Setting
-# parser.add_argument('--data_name', type=str, default="Yeast")
-parser.add_argument('--data_name', type=str, default="Router")
-parser.add_argument('--uniq_appendix', type=str, default="_improved")
+parser.add_argument('--data_name', type=str, default="Yeast")
+# parser.add_argument('--data_name', type=str, default="Router")
+# parser.add_argument('--data_name', type=str, default="USAir")
+# parser.add_argument('--data_name', type=str, default="NS")
+
+
+parser.add_argument('--uniq_appendix', type=str, default="20230730")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
                     help="which specific labeling trick to use")
-parser.add_argument('--num_hops', type=int, default=3)
+parser.add_argument('--num_hops', type=int, default=1)
 parser.add_argument('--use_feature', action='store_true',
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
-parser.add_argument('--max_node_degree', type=int, default=10)
+parser.add_argument('--max_node_degree', type=int, default=10000)
 parser.add_argument('--check_degree_constrained', default=False)
 parser.add_argument('--check_degree_distribution', default=True)
 
 # GNN Setting
 parser.add_argument('--model', type=str, default="GCN")
 parser.add_argument('--sortpool_k', type=float, default=0.6)
-parser.add_argument('--num_layers', type=int, default=3)
+parser.add_argument('--num_layers', type=int, default=1)
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--hidden_channels', type=int, default=32)
 parser.add_argument('--train_percent', type=float, default=100)
@@ -76,7 +80,7 @@ parser.add_argument('--eval_metric', default="auc")
 parser.add_argument('--hitsK', default=50)
 
 # Training settings
-parser.add_argument('--lr', type=float, default=0.01)
+parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--momentum', type=float, default=0.9)
 parser.add_argument('--epochs', type=int, default=50)
 parser.add_argument('--runs', type=int, default=1)
@@ -86,9 +90,9 @@ parser.add_argument('--micro_batch', type=bool, default=True, help="non-dp train
 parser.add_argument('--dp_no_noise', type=bool, default=False, help="dp training without noise")
 
 # Privacy settings
-parser.add_argument('--lets_dp', type=bool, default=True)
+parser.add_argument('--lets_dp', type=bool, default=False)
 parser.add_argument('--max_norm', type=float, default=1.)
-parser.add_argument('--sigma', type=float, default=2.)
+parser.add_argument('--sigma', type=float, default=1.)
 parser.add_argument('--target_delta', type=float, default=1e-5)
 
 # Testing settings
@@ -170,6 +174,12 @@ class SEALDatasetSmall(InMemoryDataset):
             name = 'SEAL_{}_data_{}'.format(self.split, self.percent)
         name += '.pt'
         return [name]
+
+    def parameter_selection(self):
+        ps_loss = parameter_selection_loss(self.num_hops, args.max_node_degree, self.A_csc, self.split_edge, epsilon=1,
+                                           beta_1=0.3, beta_2=0.3, differentially_private=False)
+        print(f"ps_loss:{ps_loss}")
+        return ps_loss
 
     def process(self):
         # Here we do not sample pos edges and neg edges should be already included.
@@ -263,11 +273,60 @@ class SEALDatasetSmall(InMemoryDataset):
         del pos_list, neg_list
 
 
-def compute_max_terms_per_edge(num_message_passing_steps, max_node_degree):
-    max_node_degree = 2 * max_node_degree ** 2
-    max_terms_per_edge = sum([max_node_degree ** i for i in range(1, num_message_passing_steps + 1)])
-    # max_terms_per_edge = min(max_terms_per_edge, args.batch_size)  # Bounded by batch_size
-    return max_terms_per_edge
+# def compute_max_terms_per_edge(num_message_passing_steps, max_node_degree):
+#     max_node_degree = 2 * max_node_degree ** 2
+#     max_terms_per_edge = sum([max_node_degree ** i for i in range(1, num_message_passing_steps + 1)])
+#     # max_terms_per_edge = min(max_terms_per_edge, args.batch_size)  # Bounded by batch_size
+#     return max_terms_per_edge
+
+def compute_max_terms_per_edge(num_message_passing_steps, max_node_degree, path_subgraph=True):
+    if path_subgraph:
+        path_length = num_message_passing_steps
+        return compute_max_terms_per_edge_for_path(path_length, max_node_degree)
+    else:
+        return 2 * max_node_degree
+
+
+def compute_max_terms_per_edge_for_path(path_length, max_node_degree, lamda=1):
+    max_terms = 0
+    for i in range(path_length):
+        head_node_num = min((1 + lamda) * max_node_degree, max_node_degree ** i)
+        tmp0 = 0
+        for j in range(path_length - i):
+            tmp0 += max_node_degree ** j
+        tail_node_num = min((1 + lamda) * max_node_degree, tmp0)
+        max_terms += head_node_num * tail_node_num
+    return max_terms
+
+
+def tranfrom_edge_to_csc(pos_edge):
+    raise NotImplementedError
+
+
+# pos_edge only contains the upper triangle elements
+
+
+def parameter_selection_loss(path_length, max_node_degree, A_csc, split_edge,
+                             epsilon, beta_1, beta_2, gamma=0.001, lamda=1, differentially_private=False):
+    max_terms = compute_max_terms_per_edge_for_path(path_length, max_node_degree, lamda)
+    pos_edge_nums = split_edge["train"]["edge"].shape[0]
+    per_node_out_degree_distribution = np.array(A_csc.sum(axis=1)).reshape(-1)
+    per_node_in_degree_distribution = np.array(A_csc.sum(axis=0)).reshape(-1)
+    df = pd.DataFrame(per_node_out_degree_distribution, columns=["out_degree"])
+    df["in_degree"] = per_node_in_degree_distribution
+    out_degree_distribution = pd.value_counts(df["out_degree"])
+    # assert per_node_out_degree_distribution == per_node_in_degree_distribution, "out degree does not equal to in degree"
+    node_over_max_node_degree_num = np.where(per_node_out_degree_distribution > max_node_degree)[0].size
+    max_degree = np.max(per_node_out_degree_distribution)
+    if differentially_private:
+        pos_edge_nums += np.random.laplace(0, 1 / (epsilon * beta_1))
+        node_over_max_node_degree_num += np.random.laplace(0, 2 / (epsilon * beta_2))
+        max_degree += np.random.laplace(0, 1 / epsilon * (1 - beta_1 - beta_2))
+    effective_sample_nums = (1 - gamma ** path_length) * (1 + lamda) * (
+            pos_edge_nums - node_over_max_node_degree_num * ((max_degree - max_node_degree) / 10))
+    effective_sample_nums = round(effective_sample_nums)
+    loss = max_terms / effective_sample_nums
+    return loss
 
 
 def compute_base_sensitivity(num_message_passing_steps, max_degree):
@@ -458,7 +517,6 @@ def main():
     np.random.seed(1234)
     random.seed(1234)
     A_csc, split_edge = load_data(args.data_name)
-
     train_dataset: SEALDatasetSmall = SEALDatasetSmall(dataset_path, A_csc, split_edge, args.num_hops,
                                                        node_features=None,
                                                        percent=args.train_percent, split="train", directed=directed)

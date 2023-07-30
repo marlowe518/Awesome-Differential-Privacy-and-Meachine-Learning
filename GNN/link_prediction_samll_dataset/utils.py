@@ -4,6 +4,8 @@
 
 import sys
 import math
+
+import scipy
 from tqdm import tqdm
 import random
 import numpy as np
@@ -17,6 +19,7 @@ from torch_geometric.data import Data
 from torch_geometric.utils import (negative_sampling, add_self_loops,
                                    train_test_split_edges)
 import pdb
+import networkx as nx
 
 
 def neighbors(fringe, A, outgoing=True):
@@ -41,9 +44,74 @@ def torch_to_tuple_set(data: torch.Tensor, sort=False):
     return tuple_set
 
 
+def draw_graph(edge_index):
+    import matplotlib.pyplot as plt
+    G = nx.Graph()
+    if isinstance(edge_index, np.ndarray):
+        G.add_edges_from([(r1, r2) for r1, r2 in zip(edge_index[0], edge_index[1])])
+    elif isinstance(edge_index, scipy.sparse.csr_matrix):
+        row_indices, col_indices = edge_index.nonzero()
+        G.add_edges_from([(r1, r2) for r1, r2 in zip(row_indices, col_indices)])
+    elif isinstance(edge_index, torch.Tensor):
+        G.add_edges_from([(r1, r2) for r1, r2 in zip(edge_index.numpy()[0], edge_index.numpy()[1])])
+    else:
+        raise ValueError("invalid edge index type")
+    nx.draw(G, cmap=plt.get_cmap('jet'), with_labels=True)
+    plt.show()
+
+
 def k_hop_subgraph(src, dst, num_hops, A, sample_ratio=1.0,
                    max_nodes_per_hop=None, node_features=None,
-                   y=1, directed=False, A_csc=None):
+                   y=1, directed=False, A_csc=None, debug=False):
+    nx_graph = nx.from_scipy_sparse_array(A, create_using=nx.Graph, parallel_edges=False)
+    path_generator = {}
+    all_paths = []
+    dists = [0, 0]
+    nodes = [src, dst]
+    visited = {src, dst}  # node set
+    # fringe = {src, dst}
+    for dist in range(1, num_hops + 1):
+        # maximum_path_length = math.ceil(dist * 2)
+        # maximum_path_length = dist * 2 + 1
+        maximum_path_length = dist * 2
+        paths = nx.all_simple_paths(nx_graph, source=src, target=dst, cutoff=maximum_path_length)
+        path_generator[dist] = paths
+        for path in map(nx.utils.pairwise, paths):
+            path = list(path)
+            if (src, dst) in path:
+                path.remove((src, dst))
+            if not path:
+                continue
+            all_paths.extend(path)
+            node_set = {node for edge in path for node in edge}
+            fringe = node_set - visited  # 新访问的节点
+            visited = visited.union(fringe)  # 将新访问节点加入访问过的节点
+            nodes = nodes + list(fringe)
+            dists = dists + [dist] * len(fringe)  # 添加新访问的节点对应src和dst的距离
+    all_paths = list(set(all_paths))
+    edges = np.array(all_paths).T
+    if edges.size == 0:
+        undirected_edges = np.array([[src, dst], [dst, src]])
+    else:
+        undirected_edges = np.hstack([np.array([[src, dst], [dst, src]]), edges, edges[[1, 0]]])
+
+    edge_weight = [0, 0] + [1] * len(all_paths) * 2
+    subgraph = ssp.csr_matrix(
+        (edge_weight, (undirected_edges[0], undirected_edges[1])),
+    ) # 先按照原来的index构建一个冗余的矩阵
+    subgraph = subgraph[nodes, :][:, nodes]  # 根据nodes将子矩阵从冗余矩阵中取出
+    debug = False
+    if debug:
+        draw_graph(subgraph)
+    if node_features is not None:
+        node_features = node_features[nodes]
+
+    return nodes, subgraph, dists, node_features, y
+
+
+def k_hop_subgraph_1(src, dst, num_hops, A, sample_ratio=1.0,
+                     max_nodes_per_hop=None, node_features=None,
+                     y=1, directed=False, A_csc=None):
     # Extract the k-hop enclosing subgraph around link (src, dst) from A. 
     nodes = [src, dst]
     dists = [0, 0]
@@ -67,16 +135,19 @@ def k_hop_subgraph(src, dst, num_hops, A, sample_ratio=1.0,
         if len(fringe) == 0:
             break
         nodes = nodes + list(fringe)
-        dists = dists + [dist] * len(fringe)
+        dists = dists + [dist] * len(fringe)  # Q:不管dist是对src还是dst吗？
+    # 这里取出的是nodes和nodes张成的一个矩阵，里面是nodes和nodes中两两组合的edge对应的值，这是个对称矩阵
     subgraph = A[nodes, :][:, nodes]
 
     # Remove target link between the subgraph.
-    subgraph[0, 1] = 0
+    subgraph[0, 1] = 0  # 返回的subgraph的前两个元素，即表示target link的(u,v) and (v,u)。
     subgraph[1, 0] = 0
 
     if node_features is not None:
         node_features = node_features[nodes]
-
+    debug = False
+    if debug:
+        draw_graph(subgraph)
     return nodes, subgraph, dists, node_features, y
 
 

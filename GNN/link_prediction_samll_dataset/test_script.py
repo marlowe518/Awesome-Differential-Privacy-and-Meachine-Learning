@@ -1,0 +1,3 @@
+from seal_link_pred_for_small_data_with_dp import compute_max_terms_per_edge_for_path
+results = compute_max_terms_per_edge_for_path(2, 10)
+print(results)

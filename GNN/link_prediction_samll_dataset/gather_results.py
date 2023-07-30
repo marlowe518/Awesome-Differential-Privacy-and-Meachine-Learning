@@ -19,7 +19,7 @@ def load_results(file_path):
 
 if __name__ == "__main__":
     all_dicts = []
-    begin_date = ["20230626", "20230627"]
+    begin_date = ["20230714"]
     for res_file_dir in os.listdir('./results'):
         for date in begin_date:
             if date in res_file_dir:  # TODO 改为大于该日期
