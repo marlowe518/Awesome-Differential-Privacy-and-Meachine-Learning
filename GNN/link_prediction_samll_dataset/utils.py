@@ -60,7 +60,7 @@ def draw_graph(edge_index):
     plt.show()
 
 
-def k_hop_subgraph(src, dst, num_hops, A, sample_ratio=1.0,
+def k_hop_subgraph(src, dst, path_length, A, sample_ratio=1.0,
                    max_nodes_per_hop=None, node_features=None,
                    y=1, directed=False, A_csc=None, debug=False):
     nx_graph = nx.from_scipy_sparse_array(A, create_using=nx.Graph, parallel_edges=False)
@@ -70,16 +70,10 @@ def k_hop_subgraph(src, dst, num_hops, A, sample_ratio=1.0,
     nodes = [src, dst]
     visited = {src, dst}  # node set
     # fringe = {src, dst}
-    if num_hops == 0:
-        real_num_hops = 1  # 实际的情况
-    else:
-        real_num_hops = num_hops
-    for dist in range(1, real_num_hops + 1):
+    maximum_path_length = path_length
+    maximum_distance_to_target_nodex = math.floor(maximum_path_length / 2)
+    for dist in range(1, maximum_distance_to_target_nodex + 1):
         # maximum_path_length = math.ceil(dist * 2)
-        if num_hops == 0:
-            maximum_path_length = dist * 2
-        else:
-            maximum_path_length = dist * 2 + 1
         paths = nx.all_simple_paths(nx_graph, source=src, target=dst, cutoff=maximum_path_length)
         path_generator[dist] = paths
         for path in map(nx.utils.pairwise, paths):
@@ -115,9 +109,9 @@ def k_hop_subgraph(src, dst, num_hops, A, sample_ratio=1.0,
     return nodes, subgraph, dists, node_features, y
 
 
-def k_hop_subgraph_1(src, dst, num_hops, A, sample_ratio=1.0,
-                     max_nodes_per_hop=None, node_features=None,
-                     y=1, directed=False, A_csc=None):
+def k_hop_neighborhood_subgraph(src, dst, num_hops, A, sample_ratio=1.0,
+                                max_nodes_per_hop=None, node_features=None,
+                                y=1, directed=False, A_csc=None):
     # Extract the k-hop enclosing subgraph around link (src, dst) from A. 
     nodes = [src, dst]
     dists = [0, 0]
@@ -260,13 +254,18 @@ def construct_pyg_graph(node_ids, adj, dists, node_features, y, node_label='drnl
 
 def extract_enclosing_subgraphs(link_index, A, x, y, num_hops, node_label='drnl',
                                 ratio_per_hop=1.0, max_nodes_per_hop=None,
-                                directed=False, A_csc=None):
+                                directed=False, A_csc=None, neighborhood_subgraph=False):
     # Extract enclosing subgraphs from A for all links in link_index.
     data_list = []
     for src, dst in tqdm(link_index.t().tolist()):
-        tmp = k_hop_subgraph(src, dst, num_hops, A, ratio_per_hop,
-                             max_nodes_per_hop, node_features=x, y=y,
-                             directed=directed, A_csc=A_csc)
+        if neighborhood_subgraph:
+            tmp = k_hop_neighborhood_subgraph(src, dst, num_hops, A, ratio_per_hop,
+                                              max_nodes_per_hop, node_features=x, y=y,
+                                              directed=directed, A_csc=A_csc)
+        else:
+            tmp = k_hop_subgraph(src, dst, num_hops, A, ratio_per_hop,
+                                 max_nodes_per_hop, node_features=x, y=y,
+                                 directed=directed, A_csc=A_csc)
         data = construct_pyg_graph(*tmp, node_label)
         data_list.append(data)
 

@@ -1,4 +1,5 @@
 import argparse
+import math
 import time
 import os, sys
 import os.path as osp
@@ -49,27 +50,30 @@ parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # parser.add_argument('--data_name', type=str, default="Yeast")
 # parser.add_argument('--data_name', type=str, default="Router")
 # parser.add_argument('--data_name', type=str, default="USAir")
-parser.add_argument('--data_name', type=str, default="NS")
+# parser.add_argument('--data_name', type=str, default="Yeast")
+# parser.add_argument('--data_name', type=str, default="NS")
+parser.add_argument('--data_name', type=str, default="PB")
+# parser.add_argument('--data_name', type=str, default="Ecoli")
 
-parser.add_argument('--uniq_appendix', type=str, default="20230730")
+parser.add_argument('--uniq_appendix', type=str, default="_2023080701")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
                     help="which specific labeling trick to use")
-parser.add_argument('--num_hops', type=int, default=0,
+parser.add_argument('--num_hops', type=int, default=3,
                     help="num_hops is the path length in path subgraph while in neighborhood it is the radius of neighborhood")
-parser.add_argument('--use_feature', action='store_true',
+parser.add_argument('--use_feature', default=False,
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
-parser.add_argument('--max_node_degree', type=int, default=10)
+parser.add_argument('--max_node_degree', type=int, default=20)
 parser.add_argument('--check_degree_constrained', default=False)
-parser.add_argument('--check_degree_distribution', default=True)
-parser.add_argument('--neighborhood_subgraph', default=False)
+parser.add_argument('--check_degree_distribution', default=False)
+parser.add_argument('--neighborhood_subgraph', action='store_true')
 
 # GNN Setting
 parser.add_argument('--model', type=str, default="GCN")
 parser.add_argument('--sortpool_k', type=float, default=0.6)
-parser.add_argument('--num_layers', type=int, default=1)
+parser.add_argument('--num_layers', type=int, default=3)
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--hidden_channels', type=int, default=32)
 parser.add_argument('--train_percent', type=float, default=100)
@@ -87,10 +91,12 @@ parser.add_argument('--epochs', type=int, default=50)
 parser.add_argument('--runs', type=int, default=1)
 parser.add_argument('--num_workers', type=int, default=0,
                     help="number of workers for dynamic mode; 0 if not dynamic")
-parser.add_argument('--micro_batch', type=bool, default=True, help="non-dp training with microbatch")
+parser.add_argument('--micro_batch', type=bool, default=True,
+                    help="non-dp training with microbatch")  # Remember any args passed from command line is strin, the following bool params only for manually tune
 parser.add_argument('--dp_no_noise', type=bool, default=False, help="dp training without noise")
 
 # Privacy settings
+parser.add_argument('--target_epsilon', type=float, default=1)
 parser.add_argument('--lets_dp', type=bool, default=True)
 parser.add_argument('--max_norm', type=float, default=1.)
 parser.add_argument('--sigma', type=float, default=1.)
@@ -164,6 +170,7 @@ class SEALDatasetSmall(InMemoryDataset):
         self.max_nodes_per_hop = max_nodes_per_hop
         self.directed = directed
         self.process_log_path = root + "/log"
+        self.neighborhood_subgraph = args.neighborhood_subgraph  # TODO as input parameter
         super(SEALDatasetSmall, self).__init__(root)
         self.data, self.slices = torch.load(self.processed_paths[0])
 
@@ -175,12 +182,6 @@ class SEALDatasetSmall(InMemoryDataset):
             name = 'SEAL_{}_data_{}'.format(self.split, self.percent)
         name += '.pt'
         return [name]
-
-    def parameter_selection(self):
-        ps_loss = parameter_selection_loss(self.num_hops, args.max_node_degree, self.A_csc, self.split_edge, epsilon=1,
-                                           beta_1=0.3, beta_2=0.3, differentially_private=False)
-        print(f"ps_loss:{ps_loss}")
-        return ps_loss
 
     def process(self):
         # Here we do not sample pos edges and neg edges should be already included.
@@ -266,10 +267,10 @@ class SEALDatasetSmall(InMemoryDataset):
         # Extract enclosing subgraphs for pos and neg edges
         pos_list = extract_enclosing_subgraphs(
             pos_edge, A_csr, self.node_features, 1, self.num_hops, self.node_label,
-            self.ratio_per_hop, self.max_nodes_per_hop, self.directed, self.A_csc)
+            self.ratio_per_hop, self.max_nodes_per_hop, self.directed, self.A_csc, self.neighborhood_subgraph)
         neg_list = extract_enclosing_subgraphs(
             neg_edge, A_csr, self.node_features, 0, self.num_hops, self.node_label,
-            self.ratio_per_hop, self.max_nodes_per_hop, self.directed, self.A_csc)
+            self.ratio_per_hop, self.max_nodes_per_hop, self.directed, self.A_csc, self.neighborhood_subgraph)
         torch.save(self.collate(pos_list + neg_list), self.processed_paths[0])
         del pos_list, neg_list
 
@@ -280,40 +281,66 @@ class SEALDatasetSmall(InMemoryDataset):
 #     # max_terms_per_edge = min(max_terms_per_edge, args.batch_size)  # Bounded by batch_size
 #     return max_terms_per_edge
 
-def compute_max_terms_per_edge(num_message_passing_steps, max_node_degree, num_hops=None, path_subgraph=True):
-    if path_subgraph:
+def compute_max_terms_per_edge_for_neighborhood(num_message_passing_steps, max_node_degree, lamda=1):
+    number_of_low_hop_neighbors = 0
+    for i in range(num_message_passing_steps):
+        number_of_low_hop_neighbors += 2 * max_node_degree ** i
+    number_of_h_hop_neighbors = max_node_degree ** num_message_passing_steps
+    max_terms_per_edge = (number_of_low_hop_neighbors + number_of_h_hop_neighbors) * (1 + lamda) * max_node_degree
+    return max_terms_per_edge
+
+
+def compute_max_terms_per_edge(num_message_passing_steps, max_node_degree, num_hops):
+    if args.neighborhood_subgraph:
+        return compute_max_terms_per_edge_for_neighborhood(num_message_passing_steps, max_node_degree)
+    else:
         return compute_max_terms_per_edge_for_path(num_hops, max_node_degree)
-    else:
-        return 2 * max_node_degree
 
 
-def compute_max_terms_per_edge_for_path(num_hops, max_node_degree, lamda=1):
-    if num_hops == 0:
-        path_length = 2
-    else:
-        path_length = 2 * num_hops + 1
+def compute_max_terms_per_edge_for_path_deprecated(path_length, max_node_degree, lamda=1):
+    hop = math.floor((path_length - 1) / 2)
     max_terms = 0
-    for i in range(path_length):
-        head_node_num = min((1 + lamda) * max_node_degree, max_node_degree ** i)
-        tmp0 = 0
-        for j in range(path_length - i):
-            tmp0 += max_node_degree ** j
-        tail_node_num = min((1 + lamda) * max_node_degree, tmp0)
-        max_terms += head_node_num * tail_node_num
+    for i in range(hop):
+        max_terms += 2 * lamda * max_node_degree ** (i + 1)
+    tail_node_num = min((1 + lamda) * max_node_degree, max_node_degree ** hop)
+    head_node_num = max_node_degree ** hop
+    max_terms += head_node_num * tail_node_num
     return max_terms
 
 
-def tranfrom_edge_to_csc(pos_edge):
-    raise NotImplementedError
-
-
-# pos_edge only contains the upper triangle elements
+def compute_max_terms_per_edge_for_path(path_length, max_node_degree, lamda=1):
+    if path_length > 2:
+        hop = math.ceil((path_length - 1) / 2)
+        r = (path_length - 1) % 2
+        print(f"r:{r}")
+        implicated_edges_incident_to_lower_node = 0
+        for i in range(hop - r):  # i=0,...,h-1-r
+            tail_node_num_of_q = 0
+            for j in range(i, 2 * hop):
+                tail_node_num_of_q += max_node_degree ** j
+            q_higher_order_neighbors_num = min(lamda * max_node_degree, tail_node_num_of_q)
+            tail_node_num_of_s = tail_node_num_of_q - max_node_degree ** i
+            s_higher_order_neighbors_num = min(lamda * max_node_degree, tail_node_num_of_s)
+            implicated_edges_incident_to_lower_node += max_node_degree ** i * (
+                    q_higher_order_neighbors_num + s_higher_order_neighbors_num)
+        tmp_1 = min((1 + lamda) * max_node_degree, max_node_degree ** hop)
+        implicated_edges_incident_to_high_order_node = (1 + r) * max_node_degree ** (hop - r) * tmp_1
+        edges_on_rings = 0
+        for i in range(1, hop - r + 1):
+            edges_on_rings += 2 * min(max_node_degree ** (hop + 1), max_node_degree ** i)
+        all_implicated_edges = implicated_edges_incident_to_lower_node \
+                               + implicated_edges_incident_to_high_order_node \
+                               + edges_on_rings
+    elif path_length == 2:
+        all_implicated_edges = 2 * max_node_degree
+    else:
+        raise ValueError(f"not a valid path_length of {path_length}")
+    return all_implicated_edges
 
 
 def parameter_selection_loss(path_length, max_node_degree, A_csc, split_edge,
                              epsilon, beta_1, beta_2, gamma=0.001, lamda=1, differentially_private=False):
-    if path_length == 0:
-        path_length = 1
+    # Only applicable to path subgraph
     max_terms = compute_max_terms_per_edge_for_path(path_length, max_node_degree, lamda)
     pos_edge_nums = split_edge["train"]["edge"].shape[0]
     per_node_out_degree_distribution = np.array(A_csc.sum(axis=1)).reshape(-1)
@@ -406,6 +433,94 @@ def train(model, train_loader, optimizer, train_dataset, emb=None):
     return total_loss / len(train_dataset)
 
 
+def account_privacy(num_message_passing_steps,
+                    max_node_degree,
+                    num_hops,
+                    step_num,
+                    batch_size,
+                    train_num,
+                    sigma,
+                    orders,
+                    target_delta=1e-5,
+                    ):
+    from privacy_analysis.RDP.compute_multiterm_rdp import compute_multiterm_rdp
+    from privacy_analysis.RDP.rdp_convert_dp import compute_eps
+    max_terms_per_edge = compute_max_terms_per_edge(num_message_passing_steps,
+                                                    max_node_degree,
+                                                    num_hops)
+    max_terms_per_edge = min(max_terms_per_edge, train_num)
+    # assert max_terms_per_node <= len(train_dataset), "#affected terms must <= #samples"
+    rdp_every_epoch = compute_multiterm_rdp(orders, step_num, sigma, train_num,
+                                            max_terms_per_edge, batch_size)
+    # rdp_every_epoch_org = compute_rdp(args.batch_size / len(train_dataset), args.sigma, 1 * epoch, orders)
+    epsilon, best_alpha = compute_eps(orders, rdp_every_epoch, target_delta)
+    return epsilon, best_alpha
+
+
+def get_noise_multiplier(
+        target_epsilon: float,
+        target_delta: float,
+        step_num: int,
+        orders: list,
+        num_message_passing_steps,
+        max_node_degree,
+        num_hops,
+        batch_size,
+        train_num,
+        epsilon_tolerance: float = 0.01,
+
+) -> float:
+    r"""
+    Computes the noise level sigma to reach a total budget of (target_epsilon, target_delta)
+    at the end of epochs, with a given sample_rate
+    Args:
+        target_epsilon: the privacy budget's epsilon
+        target_delta: the privacy budget's delta
+        sample_rate: the sampling rate (usually batch_size / n_data)
+        steps: number of steps to run
+        epsilon_tolerance: precision for the binary search
+    Returns:
+        The noise level sigma to ensure privacy budget of (target_epsilon, target_delta)
+    """
+
+    sigma_low, sigma_high = 0, 20  # 从0-10进行搜索，一般的sigma设置也不会超过这个范围。其实从0-5就可以了我觉得。TODO 这个数过大可能导致rdp<0
+
+    eps_high, best_alpha = account_privacy(num_message_passing_steps=num_message_passing_steps,
+                                           max_node_degree=max_node_degree,
+                                           num_hops=num_hops,
+                                           step_num=step_num,
+                                           batch_size=batch_size,
+                                           train_num=train_num,
+                                           sigma=sigma_high,
+                                           target_delta=target_delta,
+                                           orders=orders)
+
+    if eps_high > target_epsilon:
+        raise ValueError("The target privacy budget is too low. 当前可供搜索的最大的sigma只到100")
+
+    # 下面是折半搜索，直到找到满足这个eps容忍度的sigma_high,sigma是从大到小搜索，即eps从小到大逼近
+    while target_epsilon - eps_high > epsilon_tolerance:  # 我们希望当目前eps减去当前计算出来的eps小于容忍度，也就是计算出来的eps非常接近于目标eps
+        sigma = (sigma_low + sigma_high) / 2
+
+        eps, best_alpha = account_privacy(num_message_passing_steps=num_message_passing_steps,
+                                          max_node_degree=max_node_degree,
+                                          num_hops=num_hops,
+                                          step_num=step_num,
+                                          batch_size=batch_size,
+                                          train_num=train_num,
+                                          sigma=sigma,
+                                          target_delta=target_delta,
+                                          orders=orders)
+
+        if eps < target_epsilon:
+            sigma_high = sigma
+            eps_high = eps
+        else:
+            sigma_low = sigma
+
+    return round(sigma_high, 2)
+
+
 def train_with_dp(model, optimizer, train_dataset, epoch, emb=None):
     model.train()
     criterion = BCEWithLogitsLoss()
@@ -417,21 +532,30 @@ def train_with_dp(model, optimizer, train_dataset, epoch, emb=None):
     print(f"epoch:{epoch}, total loss:{train_loss}")
 
     # ------------------- privacy accounting ------------------- #
-    from privacy_analysis.RDP.compute_multiterm_rdp import compute_multiterm_rdp
-    from privacy_analysis.RDP.rdp_convert_dp import compute_eps
     orders = np.arange(1, 10, 0.1)[1:]
-    max_terms_per_edge = compute_max_terms_per_edge(num_message_passing_steps=args.num_layers,
-                                                    max_node_degree=args.max_node_degree,
-                                                    num_hops=args.num_hops)
-    max_terms_per_edge = min(max_terms_per_edge, len(train_dataset))
-    # assert max_terms_per_node <= len(train_dataset), "#affected terms must <= #samples"
-    rdp_every_epoch = compute_multiterm_rdp(orders, epoch, args.sigma, len(train_dataset),
-                                            max_terms_per_edge, args.batch_size)
-
-    from privacy_analysis.RDP.compute_rdp import compute_rdp
-    rdp_every_epoch_org = compute_rdp(args.batch_size / len(train_dataset), args.sigma, 1 * epoch, orders)
-    epsilon, best_alpha = compute_eps(orders, rdp_every_epoch, args.target_delta)
-    # epsilon_org, best_alpha_org = compute_eps(orders, rdp_every_epoch_org, args.target_delta)
+    epsilon, best_alpha = account_privacy(num_message_passing_steps=args.num_layers,
+                                          max_node_degree=args.max_node_degree,
+                                          num_hops=args.num_hops,
+                                          step_num=epoch,
+                                          batch_size=args.batch_size,
+                                          train_num=len(train_dataset),
+                                          sigma=args.sigma,
+                                          orders=orders)
+    # from privacy_analysis.RDP.compute_multiterm_rdp import compute_multiterm_rdp
+    # from privacy_analysis.RDP.rdp_convert_dp import compute_eps
+    # orders = np.arange(1, 10, 0.1)[1:]
+    # max_terms_per_edge = compute_max_terms_per_edge(num_message_passing_steps=args.num_layers,
+    #                                                 max_node_degree=args.max_node_degree,
+    #                                                 num_hops=args.num_hops)
+    # max_terms_per_edge = min(max_terms_per_edge, len(train_dataset))
+    # # assert max_terms_per_node <= len(train_dataset), "#affected terms must <= #samples"
+    # rdp_every_epoch = compute_multiterm_rdp(orders, epoch, args.sigma, len(train_dataset),
+    #                                         max_terms_per_edge, args.batch_size)
+    #
+    # from privacy_analysis.RDP.compute_rdp import compute_rdp
+    # rdp_every_epoch_org = compute_rdp(args.batch_size / len(train_dataset), args.sigma, 1 * epoch, orders)
+    # epsilon, best_alpha = compute_eps(orders, rdp_every_epoch, args.target_delta)
+    # # epsilon_org, best_alpha_org = compute_eps(orders, rdp_every_epoch_org, args.target_delta)
     print("epoch: {:3.0f}".format(epoch) + " | epsilon: {:10.7f}".format(
         epsilon) + " | best_alpha: {:7.4f}".format(best_alpha))
     # print("epoch: {:3.0f}".format(epoch) + " | epsilon_org: {:10.7f}".format(
@@ -524,9 +648,12 @@ def main():
     np.random.seed(1234)
     random.seed(1234)
     A_csc, split_edge = load_data(args.data_name)
-    loss_indicator = parameter_selection_loss(args.num_hops, args.max_node_degree, A_csc, split_edge, epsilon=1,
-                                              beta_1=0.3, beta_2=0.3,
-                                              differentially_private=False)
+    if not args.neighborhood_subgraph:
+        loss_indicator = parameter_selection_loss(args.num_hops, args.max_node_degree, A_csc, split_edge, epsilon=1,
+                                                  beta_1=0.3, beta_2=0.3,
+                                                  differentially_private=False)
+    else:
+        loss_indicator = 0.
     train_dataset: SEALDatasetSmall = SEALDatasetSmall(dataset_path, A_csc, split_edge, args.num_hops,
                                                        node_features=None,
                                                        percent=args.train_percent, split="train", directed=directed)
@@ -544,6 +671,20 @@ def main():
                             num_workers=args.num_workers)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size,
                              num_workers=args.num_workers)
+
+    if args.target_epsilon:
+        orders = np.arange(1, 10, 0.1)[1:]
+        sigma = get_noise_multiplier(args.target_epsilon,
+                                     args.target_delta,
+                                     num_message_passing_steps=args.num_layers,
+                                     max_node_degree=args.max_node_degree,
+                                     num_hops=args.num_hops,
+                                     step_num=args.epochs,
+                                     batch_size=args.batch_size,
+                                     train_num=len(train_dataset),
+                                     orders=orders)
+        args.sigma = sigma
+        print(f"Given target epsilon, sigma is set to:{args.sigma}")
 
     for run in range(args.runs):
         # model = DGCNN(args.hidden_channels, args.num_layers, max_z, args.sortpool_k,
@@ -620,16 +761,16 @@ def main():
                 loggers[key].print_statistics(run, f=f)
         if "AUC" in loggers and "EPS" in loggers:
             argmax = loggers["AUC"].return_statistics(run)
-            val_res = loggers["AUC"].results[run][argmax][0]
-            test_res = loggers["AUC"].results[run][argmax][1]
-            eps = float(loggers["EPS"].results[run][argmax][0])
+            val_res = loggers["AUC"].results[run][argmax][0] * 100
+            test_res = loggers["AUC"].results[run][argmax][1] * 100
+            eps_at_highest_val = float(loggers["EPS"].results[run][argmax][0])
 
-            key_results["best_epoch"] = argmax
-            key_results["epsilon"] = eps
-            key_results["highest_val"] = val_res
-            key_results["final_test"] = test_res
-            key_results["val_test_trend"] = loggers["AUC"].results[run]
-            key_results["eps_trend"] = loggers["EPS"].results[run]
+            key_results["all_runs"]["best_epoch"].append(argmax)
+            key_results["all_runs"]["eps"].append(eps_at_highest_val)
+            key_results["all_runs"]["highest_val"].append(val_res)
+            key_results["all_runs"]["final_test"].append(test_res)
+            key_results["all_runs"]["val_test_trend"].append(loggers["AUC"].results[run])
+            key_results["all_runs"]["eps_trend"].append(loggers["EPS"].results[run])
 
     for key in loggers.keys():
         print(key)
@@ -655,6 +796,17 @@ def main():
     key_results["dataset"] = args.data_name
     key_results["train_samples"] = len(train_dataset)
     key_results["parameter_indicator"] = loss_indicator
+    key_results["best_epoch"] = np.mean(key_results["all_runs"]["best_epoch"])
+    key_results["eps"] = np.mean(key_results["all_runs"]["eps"])
+    key_results["epsilon"] = args.target_epsilon
+    key_results["highest_val"] = np.mean(key_results["all_runs"]["highest_val"])
+    # key_results["val_std"] = np.round(np.std(key_results["all_runs"]["highest_val"]), 2) # TODO compared to
+    key_results["val_std"] = torch.tensor(key_results["all_runs"]["highest_val"]).std().item()
+    key_results["final_test"] = np.mean(key_results["all_runs"]["final_test"])
+    # key_results["test_std"] = np.round(np.std(key_results["all_runs"]["final_test"]), 2)
+    key_results["test_std"] = torch.tensor(key_results["all_runs"]["final_test"]).std().item()
+    key_results["neighborhood_subgraph"] = str(args.neighborhood_subgraph)
+
     with open(log_file, 'a') as f:
         print(key_results, file=f)
     save_results(args.res_dir + "/key_results.pickle", key_results)
@@ -675,16 +827,24 @@ if __name__ == "__main__":
     # Check the correctness of parameters
     if not args.lets_dp:
         args.max_node_degree = 10000  # non-private method use all edges
-    # Key results
+    if not args.neighborhood_subgraph:
+        assert args.num_layers >= math.floor(
+            args.num_hops / 2), "num layers must >= maximum distance to ensure the training is based on path subgraph"
+        args.num_layers = math.floor((args.num_layers - 1) / 2)
+        # Key results
     key_results = dict.fromkeys(
         ["dataset", "experiment", "max_node_degree",
-         "num_hop", "highest_val", "final_test", "best_epoch",
+         "num_hop", "highest_val", "final_test", "val_std", "test_std", "best_epoch",
          "original_edges", "sampled_edges", "max_term_per_edge", "epsilon", "sigma"])
+    key_results["all_runs"] = {key: [] for key in
+                               ["highest_val", "final_test", "best_epoch", "val_test_trend", "eps_trend", "eps"]}
     # Create the path for saving data and log
     if args.save_appendix == '':
         args.save_appendix = '_' + time.strftime("%Y%m%d%H%M%S")  # Mark the time
     if args.data_appendix == '':  # Create the data save path
-        args.data_appendix = '_d{}_h{}{}'.format(args.max_node_degree, args.num_hops, args.uniq_appendix)
+        ns_ps_flag = "ns" if args.neighborhood_subgraph else "ps"
+        args.data_appendix = '_d{}_{}_h{}_{}'.format(args.max_node_degree, ns_ps_flag, args.num_hops,
+                                                     args.uniq_appendix)
     # Results include the log, running command, etc.
     args.res_dir = os.path.join('results/{}{}'.format(args.data_name, args.save_appendix))
     if not os.path.exists(args.res_dir):  # Create the result directory
