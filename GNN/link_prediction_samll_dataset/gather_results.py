@@ -20,7 +20,7 @@ def load_results(file_path):
 if __name__ == "__main__":
     all_dicts = []
     # begin_date = ["20230805","20230806"]
-    begin_date = ["PB_2023081101"]
+    begin_date = ["20230814", "20230815", "20230816"]
     # begin_date = ['Ecoli_20230811']
     for res_file_dir in os.listdir('./results'):
         for date in begin_date:

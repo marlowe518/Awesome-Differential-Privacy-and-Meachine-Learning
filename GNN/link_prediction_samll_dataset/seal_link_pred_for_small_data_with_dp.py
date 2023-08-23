@@ -51,21 +51,21 @@ parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # parser.add_argument('--data_name', type=str, default="Router")
 # parser.add_argument('--data_name', type=str, default="USAir")
 # parser.add_argument('--data_name', type=str, default="Yeast")
-# parser.add_argument('--data_name', type=str, default="NS")
-parser.add_argument('--data_name', type=str, default="PB")
+parser.add_argument('--data_name', type=str, default="NS")
+# parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="Ecoli")
 
-parser.add_argument('--uniq_appendix', type=str, default="_2023080701")
+parser.add_argument('--uniq_appendix', type=str, default="_20230823")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
                     help="which specific labeling trick to use")
-parser.add_argument('--num_hops', type=int, default=3,
+parser.add_argument('--num_hops', type=int, default=1,
                     help="num_hops is the path length in path subgraph while in neighborhood it is the radius of neighborhood")
 parser.add_argument('--use_feature', default=False,
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
-parser.add_argument('--max_node_degree', type=int, default=20)
+parser.add_argument('--max_node_degree', type=int, default=70)
 parser.add_argument('--check_degree_constrained', default=False)
 parser.add_argument('--check_degree_distribution', default=False)
 parser.add_argument('--neighborhood_subgraph', action='store_true')
@@ -74,7 +74,7 @@ parser.add_argument('--neighborhood_subgraph', action='store_true')
 parser.add_argument('--model', type=str, default="GCN")
 parser.add_argument('--sortpool_k', type=float, default=0.6)
 parser.add_argument('--num_layers', type=int, default=3)
-parser.add_argument('--batch_size', type=int, default=32)
+parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--hidden_channels', type=int, default=32)
 parser.add_argument('--train_percent', type=float, default=100)
 parser.add_argument('--test_percent', type=float, default=100)
@@ -88,7 +88,7 @@ parser.add_argument('--hitsK', default=50)
 parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--momentum', type=float, default=0.9)
 parser.add_argument('--epochs', type=int, default=50)
-parser.add_argument('--runs', type=int, default=1)
+parser.add_argument('--runs', type=int, default=3)
 parser.add_argument('--num_workers', type=int, default=0,
                     help="number of workers for dynamic mode; 0 if not dynamic")
 parser.add_argument('--micro_batch', type=bool, default=True,
@@ -96,6 +96,8 @@ parser.add_argument('--micro_batch', type=bool, default=True,
 parser.add_argument('--dp_no_noise', type=bool, default=False, help="dp training without noise")
 
 # Privacy settings
+parser.add_argument('--random_seed', type=int, default=1234)
+parser.add_argument('--dp_method', type=str, default="LapGraph")
 parser.add_argument('--target_epsilon', type=float, default=1)
 parser.add_argument('--lets_dp', type=bool, default=True)
 parser.add_argument('--max_norm', type=float, default=1.)
@@ -140,7 +142,8 @@ def inspect_data_frequency_distribution(values, bin_nums=10, title=""):
 
 
 class SEALDatasetSmall(InMemoryDataset):
-    def __init__(self, root, A_csc, split_edge, num_hops, node_features=None, percent=100, split='train',
+    def __init__(self, root, A_csc, split_edge, num_hops, node_features=None, percent=100,
+                 split='train',
                  use_coalesce=False, node_label='drnl', ratio_per_hop=1.0,
                  max_nodes_per_hop=None, directed=False):
         """
@@ -171,6 +174,12 @@ class SEALDatasetSmall(InMemoryDataset):
         self.directed = directed
         self.process_log_path = root + "/log"
         self.neighborhood_subgraph = args.neighborhood_subgraph  # TODO as input parameter
+        self.dp_method = args.dp_method
+        self.max_node_degree = args.max_node_degree
+        self.target_epsilon = args.target_epsilon
+        self.target_delta = args.target_delta
+        self.random_seed = args.random_seed
+        self.noise_type = "gaussian"
         super(SEALDatasetSmall, self).__init__(root)
         self.data, self.slices = torch.load(self.processed_paths[0])
 
@@ -194,9 +203,10 @@ class SEALDatasetSmall(InMemoryDataset):
             print(f"neg_edge nums:{neg_edge.shape[1]}", file=f)
 
         # Here we sample the positive and negative edges to meet the constraint of node degree.
+
         if self.split == "train":
             key_results["original_edges"] = pos_edge.shape[1]
-            # TODO: In the future, the pos edges can be sampled, and the train indices should be whole training graph (i.e., A_csc)
+            # TODO: In the future, the pos edges can be sampled, while the train indices remain whole training graph (i.e., A_csc)
             pos_edge_degree_constrained: torch.Tensor = subsample_graph_for_undirected_graph(pos_edge,
                                                                                              max_degree=args.max_node_degree)
             neg_edge_degree_constrained: torch.Tensor = subsample_graph_for_undirected_graph(neg_edge,
@@ -212,6 +222,12 @@ class SEALDatasetSmall(InMemoryDataset):
                                                         shape=self.A_csc.shape, dtype=int)
             degree_constrained_csc_mat = degree_constrained_csc_mat + degree_constrained_csc_mat.T - ssp.diags(
                 degree_constrained_csc_mat.diagonal(), dtype=int)  # To undirected graph
+            if self.dp_method == "LapGraph":
+                from linkteller import perturb_adj_continuous
+                degree_constrained_csc_mat = perturb_adj_continuous(degree_constrained_csc_mat, noise_type="gaussian",
+                                                                    target_epsilon=self.target_epsilon,
+                                                                    target_delta=self.target_delta,
+                                                                    noise_seed=self.random_seed)
             self.A_csc = degree_constrained_csc_mat
             assert scipy.linalg.issymmetric(self.A_csc.toarray()), "Train_net must be symmetric!"
             pos_edge = pos_edge_degree_constrained
@@ -312,7 +328,6 @@ def compute_max_terms_per_edge_for_path(path_length, max_node_degree, lamda=1):
     if path_length > 2:
         hop = math.ceil((path_length - 1) / 2)
         r = (path_length - 1) % 2
-        print(f"r:{r}")
         implicated_edges_incident_to_lower_node = 0
         for i in range(hop - r):  # i=0,...,h-1-r
             tail_node_num_of_q = 0
@@ -362,14 +377,17 @@ def parameter_selection_loss(path_length, max_node_degree, A_csc, split_edge,
     return loss
 
 
-def compute_base_sensitivity(num_message_passing_steps, max_degree):
+def compute_base_sensitivity(num_message_passing_steps, max_degree, batch_size, num_hops, dp_method):
     """Returns the base sensitivity which is multiplied to the clipping threshold.
 
     Args:
 
     """
-    max_terms_per_edge = compute_max_terms_per_edge(num_message_passing_steps, max_degree, num_hops=args.num_hops)
-    max_terms_per_edge = min(max_terms_per_edge, args.batch_size)
+    if dp_method == "DPLP":
+        max_terms_per_edge = compute_max_terms_per_edge(num_message_passing_steps, max_degree, num_hops=num_hops)
+        max_terms_per_edge = min(max_terms_per_edge, batch_size)
+    elif dp_method == "DPGNN4GC":
+        max_terms_per_edge = batch_size
     return float(2 * max_terms_per_edge)
 
 
@@ -433,6 +451,15 @@ def train(model, train_loader, optimizer, train_dataset, emb=None):
     return total_loss / len(train_dataset)
 
 
+def account_privacy_dpsgd(step_num, target_delta, sigma, orders):
+    from privacy_analysis.RDP.rdp_convert_dp import compute_eps
+    from privacy_analysis.RDP.compute_rdp import compute_rdp
+    # Note that the step_num is the accumulating step.
+    rdp = compute_rdp(1., sigma, step_num, orders)
+    epsilon, best_alpha = compute_eps(orders, rdp, target_delta)
+    return epsilon, best_alpha
+
+
 def account_privacy(num_message_passing_steps,
                     max_node_degree,
                     num_hops,
@@ -445,6 +472,7 @@ def account_privacy(num_message_passing_steps,
                     ):
     from privacy_analysis.RDP.compute_multiterm_rdp import compute_multiterm_rdp
     from privacy_analysis.RDP.rdp_convert_dp import compute_eps
+
     max_terms_per_edge = compute_max_terms_per_edge(num_message_passing_steps,
                                                     max_node_degree,
                                                     num_hops)
@@ -468,7 +496,7 @@ def get_noise_multiplier(
         batch_size,
         train_num,
         epsilon_tolerance: float = 0.01,
-
+        dp_method="DPLP"
 ) -> float:
     r"""
     Computes the noise level sigma to reach a total budget of (target_epsilon, target_delta)
@@ -483,17 +511,20 @@ def get_noise_multiplier(
         The noise level sigma to ensure privacy budget of (target_epsilon, target_delta)
     """
 
-    sigma_low, sigma_high = 0, 20  # 从0-10进行搜索，一般的sigma设置也不会超过这个范围。其实从0-5就可以了我觉得。TODO 这个数过大可能导致rdp<0
-
-    eps_high, best_alpha = account_privacy(num_message_passing_steps=num_message_passing_steps,
-                                           max_node_degree=max_node_degree,
-                                           num_hops=num_hops,
-                                           step_num=step_num,
-                                           batch_size=batch_size,
-                                           train_num=train_num,
-                                           sigma=sigma_high,
-                                           target_delta=target_delta,
-                                           orders=orders)
+    sigma_low, sigma_high = 0, 1000  # 从0-10进行搜索，一般的sigma设置也不会超过这个范围。其实从0-5就可以了我觉得。TODO 这个数过大可能导致rdp<0
+    if dp_method == "DPGNN4GC":
+        eps_high, best_alpha = account_privacy_dpsgd(step_num=step_num, target_delta=args.target_delta,
+                                                     sigma=args.sigma, orders=orders)
+    else:
+        eps_high, best_alpha = account_privacy(num_message_passing_steps=num_message_passing_steps,
+                                               max_node_degree=max_node_degree,
+                                               num_hops=num_hops,
+                                               step_num=step_num,
+                                               batch_size=batch_size,
+                                               train_num=train_num,
+                                               sigma=sigma_high,
+                                               target_delta=target_delta,
+                                               orders=orders)
 
     if eps_high > target_epsilon:
         raise ValueError("The target privacy budget is too low. 当前可供搜索的最大的sigma只到100")
@@ -501,16 +532,19 @@ def get_noise_multiplier(
     # 下面是折半搜索，直到找到满足这个eps容忍度的sigma_high,sigma是从大到小搜索，即eps从小到大逼近
     while target_epsilon - eps_high > epsilon_tolerance:  # 我们希望当目前eps减去当前计算出来的eps小于容忍度，也就是计算出来的eps非常接近于目标eps
         sigma = (sigma_low + sigma_high) / 2
-
-        eps, best_alpha = account_privacy(num_message_passing_steps=num_message_passing_steps,
-                                          max_node_degree=max_node_degree,
-                                          num_hops=num_hops,
-                                          step_num=step_num,
-                                          batch_size=batch_size,
-                                          train_num=train_num,
-                                          sigma=sigma,
-                                          target_delta=target_delta,
-                                          orders=orders)
+        if dp_method == "DPGNN4GC":
+            eps, best_alpha = account_privacy_dpsgd(step_num=step_num, target_delta=args.target_delta,
+                                                    sigma=args.sigma, orders=orders)
+        else:
+            eps, best_alpha = account_privacy(num_message_passing_steps=num_message_passing_steps,
+                                              max_node_degree=max_node_degree,
+                                              num_hops=num_hops,
+                                              step_num=step_num,
+                                              batch_size=batch_size,
+                                              train_num=train_num,
+                                              sigma=sigma,
+                                              target_delta=target_delta,
+                                              orders=orders)
 
         if eps < target_epsilon:
             sigma_high = sigma
@@ -521,7 +555,7 @@ def get_noise_multiplier(
     return round(sigma_high, 2)
 
 
-def train_with_dp(model, optimizer, train_dataset, epoch, emb=None):
+def train_with_dp(model, optimizer, train_dataset, epoch, emb=None, dp_method="DPLP"):
     model.train()
     criterion = BCEWithLogitsLoss()
     indices = np.random.choice(range(len(train_dataset)), size=(args.batch_size,), replace=False)
@@ -533,14 +567,19 @@ def train_with_dp(model, optimizer, train_dataset, epoch, emb=None):
 
     # ------------------- privacy accounting ------------------- #
     orders = np.arange(1, 10, 0.1)[1:]
-    epsilon, best_alpha = account_privacy(num_message_passing_steps=args.num_layers,
-                                          max_node_degree=args.max_node_degree,
-                                          num_hops=args.num_hops,
-                                          step_num=epoch,
-                                          batch_size=args.batch_size,
-                                          train_num=len(train_dataset),
-                                          sigma=args.sigma,
-                                          orders=orders)
+    if dp_method == "DPGNN4GC":
+        epsilon, best_alpha = account_privacy_dpsgd(step_num=epoch, target_delta=args.target_delta,
+                                                    sigma=args.sigma, orders=orders)
+    else:
+        epsilon, best_alpha = account_privacy(num_message_passing_steps=args.num_layers,
+                                              max_node_degree=args.max_node_degree,
+                                              num_hops=args.num_hops,
+                                              step_num=epoch,
+                                              batch_size=args.batch_size,
+                                              train_num=len(train_dataset),
+                                              sigma=args.sigma,
+                                              orders=orders,
+                                              target_delta=args.target_delta)
     # from privacy_analysis.RDP.compute_multiterm_rdp import compute_multiterm_rdp
     # from privacy_analysis.RDP.rdp_convert_dp import compute_eps
     # orders = np.arange(1, 10, 0.1)[1:]
@@ -644,9 +683,9 @@ def evaluate_auc(val_pred, val_true, test_pred, test_true):
 
 
 def main():
-    torch.manual_seed(1234)
-    np.random.seed(1234)
-    random.seed(1234)
+    torch.manual_seed(args.random_seed)
+    np.random.seed(args.random_seed)
+    random.seed(args.random_seed)
     A_csc, split_edge = load_data(args.data_name)
     if not args.neighborhood_subgraph:
         loss_indicator = parameter_selection_loss(args.num_hops, args.max_node_degree, A_csc, split_edge, epsilon=1,
@@ -672,7 +711,7 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size,
                              num_workers=args.num_workers)
 
-    if args.target_epsilon:
+    if args.target_epsilon and (args.dp_method in ["DPLP", "DPGNN4GC"]):
         orders = np.arange(1, 10, 0.1)[1:]
         sigma = get_noise_multiplier(args.target_epsilon,
                                      args.target_delta,
@@ -682,7 +721,8 @@ def main():
                                      step_num=args.epochs,
                                      batch_size=args.batch_size,
                                      train_num=len(train_dataset),
-                                     orders=orders)
+                                     orders=orders,
+                                     dp_method=args.dp_method)
         args.sigma = sigma
         print(f"Given target epsilon, sigma is set to:{args.sigma}")
 
@@ -697,7 +737,10 @@ def main():
             raise ValueError(f"{args.model} model is not supported!")
         parameters = list(model.parameters())
         if args.lets_dp:
-            sens = compute_base_sensitivity(max_degree=args.max_node_degree, num_message_passing_steps=args.num_layers)
+            sens = compute_base_sensitivity(max_degree=args.max_node_degree,
+                                            num_message_passing_steps=args.num_layers,
+                                            num_hops=args.num_hops, batch_size=args.batch_size,
+                                            dp_method=args.dp_method)
             optimizer = DPSGD(
                 l2_norm_clip=args.max_norm,  # 裁剪范数
                 noise_multiplier=args.sigma * sens,
@@ -730,7 +773,7 @@ def main():
         start_epoch = 1
         for epoch in range(start_epoch, start_epoch + args.epochs):
             if args.lets_dp:
-                loss, eps = train_with_dp(model, optimizer, train_dataset, epoch, emb)
+                loss, eps = train_with_dp(model, optimizer, train_dataset, epoch, emb, dp_method=args.dp_method)
             else:
                 loss = train(model, train_loader, optimizer, train_dataset, emb)
             if epoch % args.eval_steps == 0:
@@ -759,18 +802,18 @@ def main():
             with open(log_file, 'a') as f:
                 print(key, file=f)
                 loggers[key].print_statistics(run, f=f)
-        if "AUC" in loggers and "EPS" in loggers:
+        if "AUC" in loggers:
             argmax = loggers["AUC"].return_statistics(run)
             val_res = loggers["AUC"].results[run][argmax][0] * 100
             test_res = loggers["AUC"].results[run][argmax][1] * 100
-            eps_at_highest_val = float(loggers["EPS"].results[run][argmax][0])
-
             key_results["all_runs"]["best_epoch"].append(argmax)
-            key_results["all_runs"]["eps"].append(eps_at_highest_val)
             key_results["all_runs"]["highest_val"].append(val_res)
             key_results["all_runs"]["final_test"].append(test_res)
             key_results["all_runs"]["val_test_trend"].append(loggers["AUC"].results[run])
-            key_results["all_runs"]["eps_trend"].append(loggers["EPS"].results[run])
+            if "EPS" in loggers:
+                eps_at_highest_val = float(loggers["EPS"].results[run][argmax][0])
+                key_results["all_runs"]["eps"].append(eps_at_highest_val)
+                key_results["all_runs"]["eps_trend"].append(loggers["EPS"].results[run])
 
     for key in loggers.keys():
         print(key)
@@ -788,7 +831,10 @@ def main():
                                                                   num_message_passing_steps=args.num_layers,
                                                                   num_hops=args.num_hops)
     key_results["sens"] = compute_base_sensitivity(max_degree=args.max_node_degree,
-                                                   num_message_passing_steps=args.num_layers)
+                                                   num_message_passing_steps=args.num_layers,
+                                                   num_hops=args.num_hops,
+                                                   batch_size=args.batch_size,
+                                                   dp_method=args.dp_method)
     key_results["lr"] = args.lr
     key_results["sigma"] = args.sigma
     key_results["max_norm"] = args.max_norm
@@ -827,10 +873,27 @@ if __name__ == "__main__":
     # Check the correctness of parameters
     if not args.lets_dp:
         args.max_node_degree = 10000  # non-private method use all edges
-    if not args.neighborhood_subgraph:
+    if args.dp_method == "LapGraph":
+        args.max_node_degree = 10000
+        args.neighborhood_subgraph = True
+        args.sigma = np.nan
+        args.lets_dp = False
+        print(f"Method: {args.dp_method}, set max_node degree to 10000, and use neighborhood subgraph, "
+              "and training without differential privacy")
+    elif args.dp_method == "DPGNN4GC":
+        args.max_node_degree = 10000
+        args.neighborhood_subgraph = True
+        print(f"Method: {args.dp_method}, set max_node degree to 10000, and use neighborhood subgraph, "
+              "and training without differential privacy")
+        # assert args.max_node_degree > 100, "for lap graph method, the max_node_degree should > 100"
+        # assert args.neighborhood_subgraph == True, "for lap graph method, neighborhood_subgraph should be used"
+    if not args.neighborhood_subgraph: # not neighborhood subgraph
         assert args.num_layers >= math.floor(
             args.num_hops / 2), "num layers must >= maximum distance to ensure the training is based on path subgraph"
-        args.num_layers = math.floor((args.num_layers - 1) / 2)
+        # args.num_layers = math.floor((args.num_layers - 1) / 2)
+        args.num_layers = args.num_hops
+    else:
+        args.num_layers = args.num_hops * 2 + 1
         # Key results
     key_results = dict.fromkeys(
         ["dataset", "experiment", "max_node_degree",
@@ -838,13 +901,16 @@ if __name__ == "__main__":
          "original_edges", "sampled_edges", "max_term_per_edge", "epsilon", "sigma"])
     key_results["all_runs"] = {key: [] for key in
                                ["highest_val", "final_test", "best_epoch", "val_test_trend", "eps_trend", "eps"]}
+    key_results["dp_method"] = args.dp_method
     # Create the path for saving data and log
     if args.save_appendix == '':
         args.save_appendix = '_' + time.strftime("%Y%m%d%H%M%S")  # Mark the time
     if args.data_appendix == '':  # Create the data save path
         ns_ps_flag = "ns" if args.neighborhood_subgraph else "ps"
-        args.data_appendix = '_d{}_{}_h{}_{}'.format(args.max_node_degree, ns_ps_flag, args.num_hops,
-                                                     args.uniq_appendix)
+        args.data_appendix += '_d{}_{}_h{}_{}'.format(args.max_node_degree, ns_ps_flag, args.num_hops,
+                                                      args.uniq_appendix)
+        if args.dp_method != "DPSGD":
+            args.data_appendix += '_{}_eps{}'.format(args.dp_method, args.target_epsilon)
     # Results include the log, running command, etc.
     args.res_dir = os.path.join('results/{}{}'.format(args.data_name, args.save_appendix))
     if not os.path.exists(args.res_dir):  # Create the result directory
