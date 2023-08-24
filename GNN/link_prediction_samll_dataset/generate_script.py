@@ -7,14 +7,14 @@ def generate_script():
         # for dataset in ["NS"]:
         # for dataset in ["USAir"]:
         # for dataset in ["NS", "USAir", "PB", "Ecoli", "Power"]:
-        for dataset in ["PB"]:
-            for num_hops in [2]:
+        for dataset in ["Power"]:
+            for num_hops in [4]:
                 for max_node_degree in [40]:
                     # for lr in [0.001, 0.01, 0.1, 1.]:
                     for lr in [0.01]:
                         # for sigma in [0.2, 2.]:
                         for target_epsilon in [1, 3, 5, 7, 9, 11, 13, 15, 17, 20]:
-                        # for target_epsilon in [1, 10, 20]:
+                            # for target_epsilon in [1, 10, 20]:
                             for sigma in [1.]:
                                 for max_norm in [1.]:
                                     for batch_size in [128]:

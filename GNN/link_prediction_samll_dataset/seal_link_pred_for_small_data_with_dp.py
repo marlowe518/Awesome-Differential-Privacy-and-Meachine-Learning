@@ -51,7 +51,7 @@ parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # parser.add_argument('--data_name', type=str, default="Router")
 # parser.add_argument('--data_name', type=str, default="USAir")
 # parser.add_argument('--data_name', type=str, default="Yeast")
-parser.add_argument('--data_name', type=str, default="NS")
+parser.add_argument('--data_name', type=str, default="Celegans")
 # parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="Ecoli")
 
@@ -60,12 +60,12 @@ parser.add_argument('--uniq_appendix', type=str, default="_20230823")
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
                     help="which specific labeling trick to use")
-parser.add_argument('--num_hops', type=int, default=1,
+parser.add_argument('--num_hops', type=int, default=4,
                     help="num_hops is the path length in path subgraph while in neighborhood it is the radius of neighborhood")
 parser.add_argument('--use_feature', default=False,
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
-parser.add_argument('--max_node_degree', type=int, default=70)
+parser.add_argument('--max_node_degree', type=int, default=40)
 parser.add_argument('--check_degree_constrained', default=False)
 parser.add_argument('--check_degree_distribution', default=False)
 parser.add_argument('--neighborhood_subgraph', action='store_true')
@@ -97,7 +97,7 @@ parser.add_argument('--dp_no_noise', type=bool, default=False, help="dp training
 
 # Privacy settings
 parser.add_argument('--random_seed', type=int, default=1234)
-parser.add_argument('--dp_method', type=str, default="LapGraph")
+parser.add_argument('--dp_method', type=str, default="DPLP")
 parser.add_argument('--target_epsilon', type=float, default=1)
 parser.add_argument('--lets_dp', type=bool, default=True)
 parser.add_argument('--max_norm', type=float, default=1.)
@@ -904,12 +904,12 @@ if __name__ == "__main__":
     key_results["dp_method"] = args.dp_method
     # Create the path for saving data and log
     if args.save_appendix == '':
-        args.save_appendix = '_' + time.strftime("%Y%m%d%H%M%S")  # Mark the time
+        args.save_appendix = '_' + time.strftime("%Y-%m-%d-%H-%M-%S")  # Mark the time
     if args.data_appendix == '':  # Create the data save path
         ns_ps_flag = "ns" if args.neighborhood_subgraph else "ps"
         args.data_appendix += '_d{}_{}_h{}_{}'.format(args.max_node_degree, ns_ps_flag, args.num_hops,
                                                       args.uniq_appendix)
-        if args.dp_method != "DPSGD":
+        if args.dp_method == "LapGraph":
             args.data_appendix += '_{}_eps{}'.format(args.dp_method, args.target_epsilon)
     # Results include the log, running command, etc.
     args.res_dir = os.path.join('results/{}{}'.format(args.data_name, args.save_appendix))

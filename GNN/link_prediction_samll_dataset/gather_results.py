@@ -1,3 +1,4 @@
+import datetime
 import os
 import pickle
 import time
@@ -20,14 +21,24 @@ def load_results(file_path):
 if __name__ == "__main__":
     all_dicts = []
     # begin_date = ["20230805","20230806"]
-    begin_date = ["20230814", "20230815", "20230816"]
+    coarse_filter = ["2023-08-24"]
+    begin_time_str = "2023-08-24-00-00-00"
+    begin_date = datetime.datetime.strptime(begin_time_str, "%Y-%m-%d-%H-%M-%S")
     # begin_date = ['Ecoli_20230811']
     for res_file_dir in os.listdir('./results'):
-        for date in begin_date:
-            if date in res_file_dir:  # TODO 改为大于该日期
+        date = res_file_dir.split("_")[-1].split(".")[0]  # date time is the last item after "_"
+        if any([d in res_file_dir for d in coarse_filter]):
+            date_time_comparable = datetime.datetime.strptime(date, "%Y-%m-%d-%H-%M-%S")
+            if date_time_comparable > begin_date:
                 res_file = f"./results/{res_file_dir}/key_results.pickle"
                 if os.path.isfile(res_file):
                     all_dicts.append(load_results(res_file))
+        # OPTION 2:
+        # for date in begin_date:
+        #     if date in res_file_dir:  # TODO 改为大于该日期
+        #         res_file = f"./results/{res_file_dir}/key_results.pickle"
+        #         if os.path.isfile(res_file):
+        #             all_dicts.append(load_results(res_file))
 
     from collections import defaultdict
 
@@ -50,7 +61,7 @@ if __name__ == "__main__":
     # res_df["original_edges"] = res_df["original_edges"].fillna(method='ffill')
     # res_df["sampled_edges"] = res_df["sampled_edges"].fillna(method='ffill')
     res_df = res_df.drop(["all_runs"], axis=1)
-    res_df.to_csv(f"./results/all_results_{time.strftime('%Y%m%d%H%M%S')}.csv")
+    res_df.to_csv(f"./results/all_results_{time.strftime('%Y-%m-%d-%H-%M-%S')}.csv")
     print(res_df)
 
     ##### temp #######
