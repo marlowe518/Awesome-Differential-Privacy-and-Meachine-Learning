@@ -22,7 +22,7 @@ if __name__ == "__main__":
     all_dicts = []
     # begin_date = ["20230805","20230806"]
     coarse_filter = ["2023-08-24"]
-    begin_time_str = "2023-08-24-00-00-00"
+    begin_time_str = "2023-08-24-14-00-00"
     begin_date = datetime.datetime.strptime(begin_time_str, "%Y-%m-%d-%H-%M-%S")
     # begin_date = ['Ecoli_20230811']
     for res_file_dir in os.listdir('./results'):
