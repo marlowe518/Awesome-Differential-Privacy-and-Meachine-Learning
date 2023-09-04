@@ -51,16 +51,16 @@ parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # parser.add_argument('--data_name', type=str, default="Router")
 # parser.add_argument('--data_name', type=str, default="USAir")
 # parser.add_argument('--data_name', type=str, default="Yeast")
-parser.add_argument('--data_name', type=str, default="Celegans")
+parser.add_argument('--data_name', type=str, default="NS")
 # parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="Ecoli")
 
-parser.add_argument('--uniq_appendix', type=str, default="_20230823")
+parser.add_argument('--uniq_appendix', type=str, default="_20230904")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
                     help="which specific labeling trick to use")
-parser.add_argument('--num_hops', type=int, default=4,
+parser.add_argument('--num_hops', type=int, default=2,
                     help="num_hops is the path length in path subgraph while in neighborhood it is the radius of neighborhood")
 parser.add_argument('--use_feature', default=False,
                     help="whether to use raw node features as GNN input")
@@ -74,7 +74,7 @@ parser.add_argument('--neighborhood_subgraph', action='store_true')
 parser.add_argument('--model', type=str, default="GCN")
 parser.add_argument('--sortpool_k', type=float, default=0.6)
 parser.add_argument('--num_layers', type=int, default=3)
-parser.add_argument('--batch_size', type=int, default=128)
+parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--hidden_channels', type=int, default=32)
 parser.add_argument('--train_percent', type=float, default=100)
 parser.add_argument('--test_percent', type=float, default=100)
@@ -85,10 +85,10 @@ parser.add_argument('--eval_metric', default="auc")
 parser.add_argument('--hitsK', default=50)
 
 # Training settings
-parser.add_argument('--lr', type=float, default=0.001)
+parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--momentum', type=float, default=0.9)
 parser.add_argument('--epochs', type=int, default=50)
-parser.add_argument('--runs', type=int, default=3)
+parser.add_argument('--runs', type=int, default=5)
 parser.add_argument('--num_workers', type=int, default=0,
                     help="number of workers for dynamic mode; 0 if not dynamic")
 parser.add_argument('--micro_batch', type=bool, default=True,
@@ -98,10 +98,10 @@ parser.add_argument('--dp_no_noise', type=bool, default=False, help="dp training
 # Privacy settings
 parser.add_argument('--random_seed', type=int, default=1234)
 parser.add_argument('--dp_method', type=str, default="DPLP")
-parser.add_argument('--target_epsilon', type=float, default=1)
+parser.add_argument('--target_epsilon', type=float, default=None)
 parser.add_argument('--lets_dp', type=bool, default=True)
-parser.add_argument('--max_norm', type=float, default=1.)
-parser.add_argument('--sigma', type=float, default=1.)
+parser.add_argument('--max_norm', type=float, default=100.)
+parser.add_argument('--sigma', type=float, default=0.01)
 parser.add_argument('--target_delta', type=float, default=1e-5)
 
 # Testing settings
@@ -806,9 +806,13 @@ def main():
             argmax = loggers["AUC"].return_statistics(run)
             val_res = loggers["AUC"].results[run][argmax][0] * 100
             test_res = loggers["AUC"].results[run][argmax][1] * 100
+            final_val_res = loggers["AUC"].results[run][-1][0] * 100
+            final_test_res = loggers["AUC"].results[run][-1][1] * 100
             key_results["all_runs"]["best_epoch"].append(argmax)
             key_results["all_runs"]["highest_val"].append(val_res)
             key_results["all_runs"]["final_test"].append(test_res)
+            key_results["all_runs"]["final_round_val"].append(final_val_res)
+            key_results["all_runs"]["final_round_test"].append(final_test_res)
             key_results["all_runs"]["val_test_trend"].append(loggers["AUC"].results[run])
             if "EPS" in loggers:
                 eps_at_highest_val = float(loggers["EPS"].results[run][argmax][0])
@@ -827,23 +831,25 @@ def main():
     key_results["experiment"] = args.res_dir
     key_results["max_node_degree"] = args.max_node_degree
     key_results["num_hop"] = args.num_hops
-    key_results["max_term_per_edge"] = compute_max_terms_per_edge(max_node_degree=args.max_node_degree,
-                                                                  num_message_passing_steps=args.num_layers,
-                                                                  num_hops=args.num_hops)
-    key_results["sens"] = compute_base_sensitivity(max_degree=args.max_node_degree,
-                                                   num_message_passing_steps=args.num_layers,
-                                                   num_hops=args.num_hops,
-                                                   batch_size=args.batch_size,
-                                                   dp_method=args.dp_method)
+    if args.lets_dp:
+        key_results["max_term_per_edge"] = compute_max_terms_per_edge(max_node_degree=args.max_node_degree,
+                                                                      num_message_passing_steps=args.num_layers,
+                                                                      num_hops=args.num_hops)
+        key_results["sens"] = compute_base_sensitivity(max_degree=args.max_node_degree,
+                                                       num_message_passing_steps=args.num_layers,
+                                                       num_hops=args.num_hops,
+                                                       batch_size=args.batch_size,
+                                                       dp_method=args.dp_method)
+        key_results["parameter_indicator"] = loss_indicator
+        key_results["eps"] = np.mean(key_results["all_runs"]["eps"])
+
     key_results["lr"] = args.lr
     key_results["sigma"] = args.sigma
     key_results["max_norm"] = args.max_norm
     key_results["batch_size"] = args.batch_size
     key_results["dataset"] = args.data_name
     key_results["train_samples"] = len(train_dataset)
-    key_results["parameter_indicator"] = loss_indicator
     key_results["best_epoch"] = np.mean(key_results["all_runs"]["best_epoch"])
-    key_results["eps"] = np.mean(key_results["all_runs"]["eps"])
     key_results["epsilon"] = args.target_epsilon
     key_results["highest_val"] = np.mean(key_results["all_runs"]["highest_val"])
     # key_results["val_std"] = np.round(np.std(key_results["all_runs"]["highest_val"]), 2) # TODO compared to
@@ -851,6 +857,10 @@ def main():
     key_results["final_test"] = np.mean(key_results["all_runs"]["final_test"])
     # key_results["test_std"] = np.round(np.std(key_results["all_runs"]["final_test"]), 2)
     key_results["test_std"] = torch.tensor(key_results["all_runs"]["final_test"]).std().item()
+    key_results["final_round_val"] = np.mean(key_results["all_runs"]["final_round_val"])
+    key_results["final_round_val_std"] = torch.tensor(key_results["all_runs"]["final_round_val"]).std().item()
+    key_results["final_round_test"] = np.mean(key_results["all_runs"]["final_round_test"])
+    key_results["final_round_test_std"] = torch.tensor(key_results["all_runs"]["final_round_test"]).std().item()
     key_results["neighborhood_subgraph"] = str(args.neighborhood_subgraph)
 
     with open(log_file, 'a') as f:
@@ -887,7 +897,7 @@ if __name__ == "__main__":
               "and training without differential privacy")
         # assert args.max_node_degree > 100, "for lap graph method, the max_node_degree should > 100"
         # assert args.neighborhood_subgraph == True, "for lap graph method, neighborhood_subgraph should be used"
-    if not args.neighborhood_subgraph: # not neighborhood subgraph
+    if not args.neighborhood_subgraph:  # not neighborhood subgraph
         assert args.num_layers >= math.floor(
             args.num_hops / 2), "num layers must >= maximum distance to ensure the training is based on path subgraph"
         # args.num_layers = math.floor((args.num_layers - 1) / 2)
@@ -898,9 +908,12 @@ if __name__ == "__main__":
     key_results = dict.fromkeys(
         ["dataset", "experiment", "max_node_degree",
          "num_hop", "highest_val", "final_test", "val_std", "test_std", "best_epoch",
-         "original_edges", "sampled_edges", "max_term_per_edge", "epsilon", "sigma"])
+         "final_round_val", "final_round_val_std",
+         "final_round_test", "final_round_test_std", "original_edges", "sampled_edges", "max_term_per_edge", "epsilon",
+         "sigma"])
     key_results["all_runs"] = {key: [] for key in
-                               ["highest_val", "final_test", "best_epoch", "val_test_trend", "eps_trend", "eps"]}
+                               ["highest_val", "final_test", "best_epoch", "val_test_trend", "final_round_val",
+                                "final_round_test", "eps_trend", "eps"]}
     key_results["dp_method"] = args.dp_method
     # Create the path for saving data and log
     if args.save_appendix == '':
