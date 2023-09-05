@@ -20,7 +20,7 @@ def get_noise(noise_type, size, seed, eps=10, delta=1e-5, sensitivity=2):
     return noise
 
 
-def perturb_adj_continuous(adj, target_epsilon, target_delta, noise_type, noise_seed, n_split=50):
+def perturb_adj_continuous(adj, target_epsilon, target_delta, noise_type, noise_seed, n_splits=50):
     """
     Args:
         self:

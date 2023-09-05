@@ -51,7 +51,7 @@ parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # parser.add_argument('--data_name', type=str, default="Router")
 # parser.add_argument('--data_name', type=str, default="USAir")
 # parser.add_argument('--data_name', type=str, default="Yeast")
-parser.add_argument('--data_name', type=str, default="Celegans")
+parser.add_argument('--data_name', type=str, default="NS")
 # parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="Ecoli")
 
@@ -227,14 +227,14 @@ class SEALDatasetSmall(InMemoryDataset):
             if self.dp_method == "LapGraph":
                 from linkteller import perturb_adj_continuous
                 if args.data_name == "Celegans":
-                    n_split = 20
+                    n_splits = 20
                 else:
-                    n_split = 50
+                    n_splits = 50
                 degree_constrained_csc_mat = perturb_adj_continuous(degree_constrained_csc_mat, noise_type="gaussian",
                                                                     target_epsilon=self.target_epsilon,
                                                                     target_delta=self.target_delta,
                                                                     noise_seed=self.random_seed,
-                                                                    n_split=n_split)
+                                                                    n_splits=n_splits)
             self.A_csc = degree_constrained_csc_mat
             assert scipy.linalg.issymmetric(self.A_csc.toarray()), "Train_net must be symmetric!"
             pos_edge = pos_edge_degree_constrained
