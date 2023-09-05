@@ -57,7 +57,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 #     plt.savefig(f'./results_figures/{first_column_name}_{df_name}.pdf', format="pdf", dpi=600)
 #     plt.show()
 
-def Plotings(df_list: list, markers, labels:list=None, metric_name="NDCG@10",
+def Plotings(df_list: list, markers, labels: list = None, metric_name="NDCG@10",
              x_label=r'${\rm \epsilon}$', save_file_path: str = None):
     """ A dataframe where the first column is the x label values, and multiple y as multiple lines.
     Args:
@@ -144,23 +144,37 @@ def data_extraction(query: str):
 
 
 def query_generate(**kwargs):
-    x, y, std = "num_hop", "final_test", "test_std"
+    y, std = "final_test", "test_std"
+    x = kwargs.get("x")
     epsilon = kwargs.get("epsilon")
     max_node_degree = kwargs.get("max_node_degree")
     data_name = kwargs.get("data_name")
+    num_hop = kwargs.get("num_hop")
+    # query = f"""
+    #     SELECT {x}, {y}, {std} FROM df
+    #     WHERE df.dataset == '{data_name}' AND df.epsilon == {epsilon} AND df.max_node_degree == {max_node_degree}
+    #     ORDER BY df.num_hop ASC
+    #     """
     query = f"""
-        SELECT {x}, {y}, {std} FROM df 
-        WHERE df.dataset == '{data_name}' AND df.epsilon == {epsilon} AND df.max_node_degree == {max_node_degree}
-        ORDER BY df.num_hop ASC
-        """
-    save_file_path = f'./results_figures/{data_name}_{x}_{max_node_degree}.pdf'
+            SELECT {x}, {y}, {std} FROM df 
+            WHERE df.dataset == '{data_name}' AND df.epsilon == {epsilon} AND df.num_hop == {num_hop}
+            ORDER BY df.num_hop ASC
+            """
+    save_file_path = f'./results_figures/{data_name}_{x}_{max_node_degree}_{num_hop}.pdf'
     return query, save_file_path
+
 
 def main():
     queries, df_list = [], []
-    data_name = "NS"
-    key_values = [{"epsilon": 11, "data_name": f"{data_name}", "max_node_degree": 40},
-                  {"epsilon": 3, "data_name": f"{data_name}", "max_node_degree": 40}]
+    data_name = "Celegans"
+    # max_node_degree = 40
+    # key_values = [{"x": "num_hop", "epsilon": 11, "data_name": f"{data_name}", "max_node_degree": max_node_degree,
+    #                "num_hop": num_hop},
+    #               {"x": "num_hop", "epsilon": 3, "data_name": f"{data_name}", "max_node_degree": max_node_degree,
+    #                "num_hop": num_hop}]
+    num_hop = 2
+    key_values = [{"x": "max_node_degree", "epsilon": 11, "data_name": f"{data_name}", "num_hop": num_hop},
+                  {"x": "max_node_degree", "epsilon": 3, "data_name": f"{data_name}", "num_hop": num_hop}]
     for ky in key_values:
         query, save_file_path = query_generate(**ky)
         queries.append(query)
@@ -168,8 +182,9 @@ def main():
     for query in queries:
         df = data_extraction(query)
         df_list.append(df)
-    save_file_path = f'./results_figures/{"Celegans"}_{"num_hop"}_{20}.pdf'
-    Plotings(df_list, compares_markers, labels=["eps=11", "eps=3"], metric_name="AUC(%)", x_label="k", save_file_path=None)
+    # save_file_path = f'./results_figures/{"Celegans"}_{"num_hop"}.pdf'
+    Plotings(df_list, compares_markers, labels=["eps=11", "eps=3"], metric_name="AUC(%)", x_label=r"$\theta$",
+             save_file_path=save_file_path)
 
 
 if __name__ == '__main__':
@@ -197,6 +212,6 @@ if __name__ == '__main__':
     # Plotings(compares_names, compares_colors, compares_markers, *compares)
     # Plotings(df_compare, compares_markers, metric_name="AUC(%)")
     # test_ablation(file_path, "num_hop", x_label=r'${\theta}$')
-    dtypes = {"max_node_degree": int, "epsilon": int, "dataset":str}
+    dtypes = {"max_node_degree": int, "epsilon": int, "dataset": str}
     df = load_table(file_path, dtypes=dtypes)
     main()

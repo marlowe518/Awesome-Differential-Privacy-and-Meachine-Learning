@@ -735,6 +735,10 @@ def main():
                         node_embedding=emb).to(device)
         else:
             raise ValueError(f"{args.model} model is not supported!")
+        if torch.cude.device_count() > 1:
+            import torch.nn as nn
+            print(f"{torch.cude.device_count()} GPUs are used")
+            model = nn.DataParallel(model)
         parameters = list(model.parameters())
         if args.lets_dp:
             sens = compute_base_sensitivity(max_degree=args.max_node_degree,
