@@ -735,9 +735,9 @@ def main():
                         node_embedding=emb).to(device)
         else:
             raise ValueError(f"{args.model} model is not supported!")
-        if torch.cude.device_count() > 1:
+        if torch.cuda.device_count() > 1:
             import torch.nn as nn
-            print(f"{torch.cude.device_count()} GPUs are used")
+            print(f"{torch.cuda.device_count()} GPUs are used")
             model = nn.DataParallel(model)
         parameters = list(model.parameters())
         if args.lets_dp:
