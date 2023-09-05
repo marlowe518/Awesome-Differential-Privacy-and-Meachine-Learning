@@ -51,21 +51,21 @@ parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # parser.add_argument('--data_name', type=str, default="Router")
 # parser.add_argument('--data_name', type=str, default="USAir")
 # parser.add_argument('--data_name', type=str, default="Yeast")
-parser.add_argument('--data_name', type=str, default="NS")
+parser.add_argument('--data_name', type=str, default="Celegans")
 # parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="Ecoli")
 
-parser.add_argument('--uniq_appendix', type=str, default="_20230904")
+parser.add_argument('--uniq_appendix', type=str, default="_20230905")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
                     help="which specific labeling trick to use")
-parser.add_argument('--num_hops', type=int, default=2,
+parser.add_argument('--num_hops', type=int, default=1,
                     help="num_hops is the path length in path subgraph while in neighborhood it is the radius of neighborhood")
 parser.add_argument('--use_feature', default=False,
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
-parser.add_argument('--max_node_degree', type=int, default=40)
+parser.add_argument('--max_node_degree', type=int, default=20)
 parser.add_argument('--check_degree_constrained', default=False)
 parser.add_argument('--check_degree_distribution', default=False)
 parser.add_argument('--neighborhood_subgraph', action='store_true')
@@ -74,7 +74,7 @@ parser.add_argument('--neighborhood_subgraph', action='store_true')
 parser.add_argument('--model', type=str, default="GCN")
 parser.add_argument('--sortpool_k', type=float, default=0.6)
 parser.add_argument('--num_layers', type=int, default=3)
-parser.add_argument('--batch_size', type=int, default=32)
+parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--hidden_channels', type=int, default=32)
 parser.add_argument('--train_percent', type=float, default=100)
 parser.add_argument('--test_percent', type=float, default=100)
@@ -85,7 +85,7 @@ parser.add_argument('--eval_metric', default="auc")
 parser.add_argument('--hitsK', default=50)
 
 # Training settings
-parser.add_argument('--lr', type=float, default=0.01)
+parser.add_argument('--lr', type=float, default=0.1)
 parser.add_argument('--momentum', type=float, default=0.9)
 parser.add_argument('--epochs', type=int, default=50)
 parser.add_argument('--runs', type=int, default=5)
@@ -97,11 +97,11 @@ parser.add_argument('--dp_no_noise', type=bool, default=False, help="dp training
 
 # Privacy settings
 parser.add_argument('--random_seed', type=int, default=1234)
-parser.add_argument('--dp_method', type=str, default="DPLP")
-parser.add_argument('--target_epsilon', type=float, default=None)
+parser.add_argument('--dp_method', type=str, default="LapGraph")
+parser.add_argument('--target_epsilon', type=float, default=3.)
 parser.add_argument('--lets_dp', type=bool, default=True)
-parser.add_argument('--max_norm', type=float, default=100.)
-parser.add_argument('--sigma', type=float, default=0.01)
+parser.add_argument('--max_norm', type=float, default=1.)
+parser.add_argument('--sigma', type=float, default=1.)
 parser.add_argument('--target_delta', type=float, default=1e-5)
 
 # Testing settings
@@ -226,10 +226,15 @@ class SEALDatasetSmall(InMemoryDataset):
                 degree_constrained_csc_mat.diagonal(), dtype=int)  # To undirected graph
             if self.dp_method == "LapGraph":
                 from linkteller import perturb_adj_continuous
+                if args.data_name == "Celegans":
+                    n_split = 20
+                else:
+                    n_split = 50
                 degree_constrained_csc_mat = perturb_adj_continuous(degree_constrained_csc_mat, noise_type="gaussian",
                                                                     target_epsilon=self.target_epsilon,
                                                                     target_delta=self.target_delta,
-                                                                    noise_seed=self.random_seed)
+                                                                    noise_seed=self.random_seed,
+                                                                    n_split=n_split)
             self.A_csc = degree_constrained_csc_mat
             assert scipy.linalg.issymmetric(self.A_csc.toarray()), "Train_net must be symmetric!"
             pos_edge = pos_edge_degree_constrained

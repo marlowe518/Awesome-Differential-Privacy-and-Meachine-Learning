@@ -20,7 +20,7 @@ def get_noise(noise_type, size, seed, eps=10, delta=1e-5, sensitivity=2):
     return noise
 
 
-def perturb_adj_continuous(adj, target_epsilon, target_delta, noise_type, noise_seed):
+def perturb_adj_continuous(adj, target_epsilon, target_delta, noise_type, noise_seed, n_split=50):
     """
     Args:
         self:
@@ -58,19 +58,19 @@ def perturb_adj_continuous(adj, target_epsilon, target_delta, noise_type, noise_
     t = time.time()
     a_r = A.A.ravel()
 
-    n_splits = 50
+    n_splits = n_splits
     len_h = len(a_r) // n_splits
     ind_list = []
     for i in tqdm(range(n_splits - 1)):
         ind = np.argpartition(a_r[len_h * i:len_h * (i + 1)], -n_edges_keep)[-n_edges_keep:]
-        ind_list.append(ind + len_h * i)
+        ind_list.append(ind + len_h * i) # 这里split之后，A矩阵中的元素被分割为多个len_h长的小batch，每个batch中找前topk个。这是为了避免全量找topk个的计算量。先减小数据规模。
 
     ind = np.argpartition(a_r[len_h * (n_splits - 1):], -n_edges_keep)[-n_edges_keep:]
     ind_list.append(ind + len_h * (n_splits - 1))
 
     ind_subset = np.hstack(ind_list)
     a_subset = a_r[ind_subset]
-    ind = np.argpartition(a_subset, -n_edges_keep)[-n_edges_keep:]
+    ind = np.argpartition(a_subset, -n_edges_keep)[-n_edges_keep:] # 最后对取出来的数据找topk个
 
     row_idx = []
     col_idx = []

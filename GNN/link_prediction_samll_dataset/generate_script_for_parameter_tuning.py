@@ -4,10 +4,10 @@ def generate_script():
         # for dataset in ["Yeast", "Ecoli", "Power", "Router"]:
         # for dataset in ["NS"]:
         # for dataset in ["USAir"]:
-        for dataset in ["PB"]:
+        for dataset in ["Celegans"]:
         # for dataset in ["NS"]:
             for num_hops in [1]:
-                for max_node_degree in [60]:
+                for max_node_degree in [40]:
                     # for lr in [0.001, 0.01, 0.1, 1.]:
                     for lr in [0.1]:
                         # for sigma in [0.2, 2.]:
@@ -29,7 +29,7 @@ def generate_script():
                                                         f"--batch_size {batch_size}",
                                                         f"--target_epsilon {target_epsilon}",
                                                         f"--runs {5}",
-                                                        f"--dp_method {'DPLP'}",
+                                                        f"--dp_method {'LapGraph'}",
                                                         f"--neighborhood_subgraph",
                                                         f"--uniq_appendix '20230905'"
                                                         ]), file=f, )
