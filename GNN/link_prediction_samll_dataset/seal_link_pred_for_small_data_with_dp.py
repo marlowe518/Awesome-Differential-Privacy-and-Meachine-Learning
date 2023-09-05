@@ -116,7 +116,7 @@ parser.add_argument('--keep_old', action='store_true',
 parser.add_argument('--visible_gpus', type=str, default='0,1,2,3')
 
 args = parser.parse_args()
-os.environ['CUDA_VISIBLE_DEVICES'] = args.visible_gpus
+# os.environ['CUDA_VISIBLE_DEVICES'] = args.visible_gpus
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 

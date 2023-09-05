@@ -4,10 +4,10 @@ def generate_script():
         # for dataset in ["Yeast", "Ecoli", "Power", "Router"]:
         # for dataset in ["NS"]:
         # for dataset in ["USAir"]:
-        for dataset in ["Celegans"]:
+        for dataset in ["PB"]:
         # for dataset in ["NS"]:
             for num_hops in [1]:
-                for max_node_degree in [40]:
+                for max_node_degree in [60]:
                     # for lr in [0.001, 0.01, 0.1, 1.]:
                     for lr in [0.1]:
                         # for sigma in [0.2, 2.]:
@@ -17,7 +17,7 @@ def generate_script():
                                 for max_norm in [1.]:
                                     for batch_size in [128]:
                                         # TODO num_layers should be deduced by number of hops
-                                        print(" ".join(["CUDA_VISIBLE_DEVICE=0",
+                                        print(" ".join(["CUDA_VISIBLE_DEVICES=0",
                                                         "python", "seal_link_pred_for_small_data_with_dp.py",
                                                         f"--data_name {dataset}",
                                                         f"--num_hops {num_hops}",
