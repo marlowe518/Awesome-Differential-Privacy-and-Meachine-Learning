@@ -1,12 +1,10 @@
 import time
-
-
 def generate_script():
     with open(f"./running_{time.strftime('%Y-%m-%d-%H-%M-%S')}.sh", "w") as f:
         # for dataset in ["Yeast", "Ecoli", "Power", "Router"]:
         # for dataset in ["NS"]:
         # for dataset in ["USAir"]:
-        for dataset in ["PB"]:
+        for dataset in ["Celegans"]:
         # for dataset in ["NS"]:
             for num_hops in [1]:
                 for max_node_degree in [40]:
@@ -19,7 +17,7 @@ def generate_script():
                                 for max_norm in [1.]:
                                     for batch_size in [128]:
                                         # TODO num_layers should be deduced by number of hops
-                                        print(" ".join(["CUDA_VISIBLE_DEVICE=1"
+                                        print(" ".join(["CUDA_VISIBLE_DEVICE=0",
                                                         "python", "seal_link_pred_for_small_data_with_dp.py",
                                                         f"--data_name {dataset}",
                                                         f"--num_hops {num_hops}",
@@ -33,7 +31,7 @@ def generate_script():
                                                         f"--runs {5}",
                                                         f"--dp_method {'DPLP'}",
                                                         f"--neighborhood_subgraph",
-                                                        f"--uniq_appendix '20230904'"
+                                                        f"--uniq_appendix '20230905'"
                                                         ]), file=f, )
 
 
