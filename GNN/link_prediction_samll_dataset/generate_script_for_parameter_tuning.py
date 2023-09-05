@@ -19,7 +19,8 @@ def generate_script():
                                 for max_norm in [1.]:
                                     for batch_size in [128]:
                                         # TODO num_layers should be deduced by number of hops
-                                        print(" ".join(["python", "seal_link_pred_for_small_data_with_dp.py",
+                                        print(" ".join(["CUDA_VISIBLE_DEVICE=1"
+                                                        "python", "seal_link_pred_for_small_data_with_dp.py",
                                                         f"--data_name {dataset}",
                                                         f"--num_hops {num_hops}",
                                                         f"--num_layers {num_hops}",
@@ -32,8 +33,8 @@ def generate_script():
                                                         f"--runs {5}",
                                                         f"--dp_method {'DPLP'}",
                                                         f"--neighborhood_subgraph",
-                                                        f"--uniq_appendix '20230904'",
-                                                        f"--visible_gpus '2'"]), file=f, )
+                                                        f"--uniq_appendix '20230904'"
+                                                        ]), file=f, )
 
 
 # def split_script():
