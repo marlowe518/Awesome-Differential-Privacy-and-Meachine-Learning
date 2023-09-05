@@ -113,8 +113,10 @@ parser.add_argument('--save_appendix', type=str, default='',
                     help="an appendix to the save directory")  # The log path
 parser.add_argument('--keep_old', action='store_true',
                     help="do not overwrite old files in the save directory")  # save the running script
+parser.add_argument('--visible_gpus', type=str, default='0,1,2,3')
 
 args = parser.parse_args()
+os.environ['CUDA_VISIBLE_DEVICES'] = args.visible_gpus
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -735,10 +737,10 @@ def main():
                         node_embedding=emb).to(device)
         else:
             raise ValueError(f"{args.model} model is not supported!")
-        if torch.cuda.device_count() > 1:
-            import torch.nn as nn
-            print(f"{torch.cuda.device_count()} GPUs are used")
-            model = nn.DataParallel(model)
+        # if torch.cuda.device_count() > 1: TODO multi-GPUs on GNN
+        #     import torch.nn as nn
+        #     print(f"{torch.cuda.device_count()} GPUs are used")
+        #     model = nn.DataParallel(model)
         parameters = list(model.parameters())
         if args.lets_dp:
             sens = compute_base_sensitivity(max_degree=args.max_node_degree,

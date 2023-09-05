@@ -32,7 +32,8 @@ def generate_script():
                                                         f"--runs {5}",
                                                         f"--dp_method {'DPLP'}",
                                                         f"--neighborhood_subgraph",
-                                                        f"--uniq_appendix '20230904'"]), file=f, )
+                                                        f"--uniq_appendix '20230904'",
+                                                        f"--visible_gpus '2'"]), file=f, )
 
 
 # def split_script():
