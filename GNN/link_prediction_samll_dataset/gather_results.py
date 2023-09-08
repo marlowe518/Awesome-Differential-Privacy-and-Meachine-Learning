@@ -64,7 +64,7 @@ if __name__ == "__main__":
     # results = data_degree_groups.apply(lambda x:x)
     # res_df["original_edges"] = res_df["original_edges"].fillna(method='ffill')
     # res_df["sampled_edges"] = res_df["sampled_edges"].fillna(method='ffill')
-    res_df["val_test_trend"] = res_df["all_runs"].apply(lambda x: np.mean(np.array(x["val_test_trend"]), axis=0))
+    res_df["val_trend"] = res_df["all_runs"].apply(lambda x: ",".join(list(np.ravel(np.mean(np.array(x["val_test_trend"]), axis=0)[:,0]).astype(str)))) # save as ravelled string
     # print(res_df["val_test_trend"][0], sep="\n")
     res_df = res_df.drop(["all_runs"], axis=1)
     res_df.to_csv(f"./results/all_results_{time.strftime('%Y-%m-%d-%H-%M-%S')}.csv")
