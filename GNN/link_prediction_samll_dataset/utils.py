@@ -1,9 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
+import functools
+import multiprocessing
+import operator
+import os
 import sys
 import math
+import time
 
 import scipy
 from tqdm import tqdm
@@ -74,20 +78,21 @@ def k_hop_subgraph(src, dst, path_length, A, sample_ratio=1.0,
     maximum_distance_to_target_nodex = math.floor(maximum_path_length / 2)
     for dist in range(1, maximum_distance_to_target_nodex + 1):
         # maximum_path_length = math.ceil(dist * 2)
-        paths = nx.all_simple_paths(nx_graph, source=src, target=dst, cutoff=maximum_path_length)
-        path_generator[dist] = paths
-        for path in map(nx.utils.pairwise, paths):
-            path = list(path)
-            if (src, dst) in path:
-                path.remove((src, dst))
-            if not path:
-                continue
-            all_paths.extend(path)
-            node_set = {node for edge in path for node in edge}
-            fringe = node_set - visited  # 新访问的节点
-            visited = visited.union(fringe)  # 将新访问节点加入访问过的节点
-            nodes = nodes + list(fringe)
-            dists = dists + [dist] * len(fringe)  # 添加新访问的节点对应src和dst的距离
+        if nx.has_path(nx_graph, source=src, target=dst):  # all_simple_path does not check the existence of paths
+            paths = nx.all_simple_paths(nx_graph, source=src, target=dst, cutoff=maximum_path_length)
+            path_generator[dist] = paths
+            for path in map(nx.utils.pairwise, paths):
+                path = list(path)
+                if (src, dst) in path:
+                    path.remove((src, dst))
+                if not path:
+                    continue
+                all_paths.extend(path)
+                node_set = {node for edge in path for node in edge}
+                fringe = node_set - visited  # 新访问的节点
+                visited = visited.union(fringe)  # 将新访问节点加入访问过的节点
+                nodes = nodes + list(fringe)
+                dists = dists + [dist] * len(fringe)  # 添加新访问的节点对应src和dst的距离
     all_paths = list(set(all_paths))
     edges = np.array(all_paths).T
     if edges.size == 0:
@@ -252,10 +257,29 @@ def construct_pyg_graph(node_ids, adj, dists, node_features, y, node_label='drnl
     return data
 
 
-def extract_enclosing_subgraphs(link_index, A, x, y, num_hops, node_label='drnl',
-                                ratio_per_hop=1.0, max_nodes_per_hop=None,
-                                directed=False, A_csc=None, neighborhood_subgraph=False):
+# def extract_enclosing_subgraphs(link_index, A, x, y, num_hops, node_label='drnl',
+#                                 ratio_per_hop=1.0, max_nodes_per_hop=None,
+#                                 directed=False, A_csc=None, neighborhood_subgraph=False):
+#     # Extract enclosing subgraphs from A for all links in link_index.
+#     data_list = []
+#     for src, dst in tqdm(link_index.t().tolist()):
+#         if neighborhood_subgraph:
+#             tmp = k_hop_neighborhood_subgraph(src, dst, num_hops, A, ratio_per_hop,
+#                                               max_nodes_per_hop, node_features=x, y=y,
+#                                               directed=directed, A_csc=A_csc)
+#         else:
+#             tmp = k_hop_subgraph(src, dst, num_hops, A, ratio_per_hop,
+#                                  max_nodes_per_hop, node_features=x, y=y,
+#                                  directed=directed, A_csc=A_csc)
+#         data = construct_pyg_graph(*tmp, node_label)
+#         data_list.append(data)
+#     return data_list
+
+def extract_enclosing_subgraphs(args):
     # Extract enclosing subgraphs from A for all links in link_index.
+    link_index, A, x, y, num_hops, node_label, \
+        ratio_per_hop, max_nodes_per_hop, directed, A_csc, neighborhood_subgraph = args
+    print(f"\nProcess:{os.getpid()} is processing {link_index.shape[1]} target links!")
     data_list = []
     for src, dst in tqdm(link_index.t().tolist()):
         if neighborhood_subgraph:
@@ -268,8 +292,29 @@ def extract_enclosing_subgraphs(link_index, A, x, y, num_hops, node_label='drnl'
                                  directed=directed, A_csc=A_csc)
         data = construct_pyg_graph(*tmp, node_label)
         data_list.append(data)
-
+    print(f"\nProcess:{os.getpid()} is finished")
     return data_list
+
+
+def extract_enclosing_subgraphs_parallel(link_index, A, x, y, num_hops, node_label='drnl',
+                                         ratio_per_hop=1.0, max_nodes_per_hop=None,
+                                         directed=False, A_csc=None, neighborhood_subgraph=False):  # main process
+    from multiprocessing import Pool
+
+    cpu_worker_num = multiprocessing.cpu_count() - 2
+    # cpu_worker_num = 1
+    link_index_chunks = torch.chunk(link_index, cpu_worker_num, axis=1)
+    process_args = [(link_index_chunk, A, x, y, num_hops, node_label, ratio_per_hop, max_nodes_per_hop, directed, A_csc,
+                     neighborhood_subgraph) for link_index_chunk in link_index_chunks]
+
+    # print(f'| inputs:  {process_args}')
+    start_time = time.time()
+    print(f"Extracting subgraphs with {cpu_worker_num} processes")
+    with Pool(cpu_worker_num) as p:
+        outputs = p.map(extract_enclosing_subgraphs, process_args)
+    outputs = functools.reduce(operator.add, outputs) # 合并所有进程的结果
+    print(f'| outputs length: {len(outputs)} TimeUsed: {time.time() - start_time:.1f}    \n')
+    return outputs
 
 
 def do_edge_split(dataset, fast_split=False, val_ratio=0.05, test_ratio=0.1):

@@ -51,11 +51,11 @@ parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # parser.add_argument('--data_name', type=str, default="Router")
 # parser.add_argument('--data_name', type=str, default="USAir")
 # parser.add_argument('--data_name', type=str, default="Yeast")
-parser.add_argument('--data_name', type=str, default="NS")
+parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="Ecoli")
 
-parser.add_argument('--uniq_appendix', type=str, default="_20230905")
+parser.add_argument('--uniq_appendix', type=str, default="_2023090801")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
@@ -288,11 +288,18 @@ class SEALDatasetSmall(InMemoryDataset):
             self.A_csc = None
 
         # Extract enclosing subgraphs for pos and neg edges
-        pos_list = extract_enclosing_subgraphs(
-            pos_edge, A_csr, self.node_features, 1, self.num_hops, self.node_label,
+        s_time = time.time()
+        # pos_list = extract_enclosing_subgraphs(
+        #     pos_edge, A_csr, self.node_features, 1, self.num_hops, self.node_label,
+        #     self.ratio_per_hop, self.max_nodes_per_hop, self.directed, self.A_csc, self.neighborhood_subgraph)
+        pos_list = extract_enclosing_subgraphs_parallel(pos_edge, A_csr, self.node_features, 1, self.num_hops, self.node_label,
             self.ratio_per_hop, self.max_nodes_per_hop, self.directed, self.A_csc, self.neighborhood_subgraph)
-        neg_list = extract_enclosing_subgraphs(
-            neg_edge, A_csr, self.node_features, 0, self.num_hops, self.node_label,
+        e_time = time.time()
+        print(f"Positive Edges Extracting Time consumed :{e_time - s_time}")
+        # neg_list = extract_enclosing_subgraphs(
+        #     neg_edge, A_csr, self.node_features, 0, self.num_hops, self.node_label,
+        #     self.ratio_per_hop, self.max_nodes_per_hop, self.directed, self.A_csc, self.neighborhood_subgraph)
+        neg_list = extract_enclosing_subgraphs_parallel(neg_edge, A_csr, self.node_features, 0, self.num_hops, self.node_label,
             self.ratio_per_hop, self.max_nodes_per_hop, self.directed, self.A_csc, self.neighborhood_subgraph)
         torch.save(self.collate(pos_list + neg_list), self.processed_paths[0])
         del pos_list, neg_list
