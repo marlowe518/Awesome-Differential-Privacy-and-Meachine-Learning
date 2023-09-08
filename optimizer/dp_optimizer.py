@@ -8,8 +8,8 @@ from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.distributions.normal import Normal
 from torch.optim import SGD, Adam, Adagrad, RMSprop
 
-from data.util.compute_coordinates import cartesian_to_polar, \
-    polar_to_cartesian, vector_to_matrix, cartesian_add_noise, devide_epslion
+# from data.util.compute_coordinates import cartesian_to_polar, \
+#     polar_to_cartesian, vector_to_matrix, cartesian_add_noise, devide_epslion
 from privacy_analysis.RDP.compute_dp_sgd import apply_dp_sgd_analysis
 
 

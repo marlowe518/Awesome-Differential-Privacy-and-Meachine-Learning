@@ -3,6 +3,7 @@ import os
 import pickle
 import time
 
+import numpy as np
 import pandas as pd
 
 
@@ -21,15 +22,18 @@ def load_results(file_path):
 if __name__ == "__main__":
     all_dicts = []
     # begin_date = ["20230805","20230806"]
-    coarse_filter = ["2023-09-04"]
+    coarse_filter = ["2023-09-04","2023-09-05"]
     begin_time_str = "2023-09-04-21-41-00"
+    end_time_str = "2023-09-05-03-41-00"
+    # end_time_str = "2023-12-31-23-59-59"
     begin_date = datetime.datetime.strptime(begin_time_str, "%Y-%m-%d-%H-%M-%S")
+    end_date = datetime.datetime.strptime(end_time_str, "%Y-%m-%d-%H-%M-%S")
     # begin_date = ['Ecoli_20230811']
     for res_file_dir in os.listdir('./results'):
         date = res_file_dir.split("_")[-1].split(".")[0]  # date time is the last item after "_"
         if any([d in res_file_dir for d in coarse_filter]):
             date_time_comparable = datetime.datetime.strptime(date, "%Y-%m-%d-%H-%M-%S")
-            if date_time_comparable > begin_date:
+            if (date_time_comparable > begin_date) and (date_time_comparable <= end_date):
                 res_file = f"./results/{res_file_dir}/key_results.pickle"
                 if os.path.isfile(res_file):
                     all_dicts.append(load_results(res_file))
@@ -60,6 +64,8 @@ if __name__ == "__main__":
     # results = data_degree_groups.apply(lambda x:x)
     # res_df["original_edges"] = res_df["original_edges"].fillna(method='ffill')
     # res_df["sampled_edges"] = res_df["sampled_edges"].fillna(method='ffill')
+    res_df["val_test_trend"] = res_df["all_runs"].apply(lambda x: np.mean(np.array(x["val_test_trend"]), axis=0))
+    # print(res_df["val_test_trend"][0], sep="\n")
     res_df = res_df.drop(["all_runs"], axis=1)
     res_df.to_csv(f"./results/all_results_{time.strftime('%Y-%m-%d-%H-%M-%S')}.csv")
     print(res_df)
