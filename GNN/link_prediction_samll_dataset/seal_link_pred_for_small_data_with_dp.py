@@ -65,7 +65,7 @@ parser.add_argument('--num_hops', type=int, default=3,
 parser.add_argument('--use_feature', default=False,
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
-parser.add_argument('--max_node_degree', type=int, default=20)
+parser.add_argument('--max_node_degree', type=int, default=60)
 parser.add_argument('--check_degree_constrained', default=False)
 parser.add_argument('--check_degree_distribution', default=False)
 parser.add_argument('--neighborhood_subgraph', action='store_true')
