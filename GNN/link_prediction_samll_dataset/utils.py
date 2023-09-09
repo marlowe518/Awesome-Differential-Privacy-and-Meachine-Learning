@@ -281,7 +281,7 @@ def extract_enclosing_subgraphs(args):
         ratio_per_hop, max_nodes_per_hop, directed, A_csc, neighborhood_subgraph = args
     process_pid = os.getpid()
     process_name = idx
-    tqdm.write(f"\nProcess:{process_name} is processing {link_index.shape[1]} target links!")
+    #tqdm.write(f"\nProcess:{process_name} is processing {link_index.shape[1]} target links!")
     data_list = []
     pro_bar = tqdm(link_index.t().tolist(), ncols=80, desc=f"Process {process_name} pid:{process_pid}", delay=0.01,
                          position=process_name, ascii=False)
@@ -296,7 +296,8 @@ def extract_enclosing_subgraphs(args):
                                  directed=directed, A_csc=A_csc)
         data = construct_pyg_graph(*tmp, node_label)
         data_list.append(data)
-    tqdm.write(f"\nProcess:{os.getpid()} is finished")
+
+    #tqdm.write(f"\nProcess:{os.getpid()} is finished")
     return data_list
 
 
@@ -306,7 +307,7 @@ def extract_enclosing_subgraphs_parallel(link_index, A, x, y, num_hops, node_lab
     from multiprocessing import Pool
 
     cpu_worker_num = multiprocessing.cpu_count() - 6
-    # cpu_worker_num = 1
+    # cpu_worker_num = 4
     link_index_chunks = torch.chunk(link_index, cpu_worker_num, axis=1)
     process_args = [
         (idx, link_index_chunk, A, x, y, num_hops, node_label, ratio_per_hop, max_nodes_per_hop, directed, A_csc,
@@ -315,7 +316,9 @@ def extract_enclosing_subgraphs_parallel(link_index, A, x, y, num_hops, node_lab
     # print(f'| inputs:  {process_args}')
     start_time = time.time()
     print(f"Extracting subgraphs with {cpu_worker_num} processes")
-    with Pool(cpu_worker_num, initializer=tqdm.set_lock, initargs=(multiprocessing.RLock(),)) as p:
+    # with Pool(cpu_worker_num, initializer=tqdm.set_lock, initargs=(multiprocessing.RLock(),)) as p:
+    #     outputs = p.map(extract_enclosing_subgraphs, process_args)
+    with Pool(cpu_worker_num) as p:
         outputs = p.map(extract_enclosing_subgraphs, process_args)
     outputs = functools.reduce(operator.add, outputs)  # 合并所有进程的结果
     print(f'| outputs length: {len(outputs)} TimeUsed: {time.time() - start_time:.1f}    \n')

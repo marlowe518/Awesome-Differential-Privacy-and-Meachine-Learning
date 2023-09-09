@@ -55,12 +55,12 @@ parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="Ecoli")
 
-parser.add_argument('--uniq_appendix', type=str, default="_20230909")
+parser.add_argument('--uniq_appendix', type=str, default="_2023090902")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
                     help="which specific labeling trick to use")
-parser.add_argument('--num_hops', type=int, default=5,
+parser.add_argument('--num_hops', type=int, default=3,
                     help="num_hops is the path length in path subgraph while in neighborhood it is the radius of neighborhood")
 parser.add_argument('--use_feature', default=False,
                     help="whether to use raw node features as GNN input")
@@ -98,7 +98,7 @@ parser.add_argument('--dp_no_noise', type=bool, default=False, help="dp training
 # Privacy settings
 parser.add_argument('--random_seed', type=int, default=1234)
 parser.add_argument('--dp_method', type=str, default="DPLP")
-parser.add_argument('--target_epsilon', type=float, default=10.)
+parser.add_argument('--target_epsilon', type=float, default=1000.)
 parser.add_argument('--lets_dp', type=bool, default=True)
 parser.add_argument('--max_norm', type=float, default=1.)
 parser.add_argument('--sigma', type=float, default=1.)
