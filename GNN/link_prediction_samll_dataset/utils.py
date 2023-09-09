@@ -10,7 +10,7 @@ import math
 import time
 
 import scipy
-from tqdm import tqdm
+from tqdm import tqdm, trange
 import random
 import numpy as np
 import scipy.sparse as ssp
@@ -277,11 +277,15 @@ def construct_pyg_graph(node_ids, adj, dists, node_features, y, node_label='drnl
 
 def extract_enclosing_subgraphs(args):
     # Extract enclosing subgraphs from A for all links in link_index.
-    link_index, A, x, y, num_hops, node_label, \
+    idx, link_index, A, x, y, num_hops, node_label, \
         ratio_per_hop, max_nodes_per_hop, directed, A_csc, neighborhood_subgraph = args
-    print(f"\nProcess:{os.getpid()} is processing {link_index.shape[1]} target links!")
+    process_pid = os.getpid()
+    process_name = idx
+    tqdm.write(f"\nProcess:{process_name} is processing {link_index.shape[1]} target links!")
     data_list = []
-    for src, dst in tqdm(link_index.t().tolist()):
+    pro_bar = tqdm(link_index.t().tolist(), ncols=80, desc=f"Process {process_name} pid:{process_pid}", delay=0.01,
+                         position=process_name, ascii=False)
+    for src, dst in pro_bar:
         if neighborhood_subgraph:
             tmp = k_hop_neighborhood_subgraph(src, dst, num_hops, A, ratio_per_hop,
                                               max_nodes_per_hop, node_features=x, y=y,
@@ -292,7 +296,7 @@ def extract_enclosing_subgraphs(args):
                                  directed=directed, A_csc=A_csc)
         data = construct_pyg_graph(*tmp, node_label)
         data_list.append(data)
-    print(f"\nProcess:{os.getpid()} is finished")
+    tqdm.write(f"\nProcess:{os.getpid()} is finished")
     return data_list
 
 
@@ -301,18 +305,19 @@ def extract_enclosing_subgraphs_parallel(link_index, A, x, y, num_hops, node_lab
                                          directed=False, A_csc=None, neighborhood_subgraph=False):  # main process
     from multiprocessing import Pool
 
-    cpu_worker_num = multiprocessing.cpu_count() - 2
+    cpu_worker_num = multiprocessing.cpu_count() - 6
     # cpu_worker_num = 1
     link_index_chunks = torch.chunk(link_index, cpu_worker_num, axis=1)
-    process_args = [(link_index_chunk, A, x, y, num_hops, node_label, ratio_per_hop, max_nodes_per_hop, directed, A_csc,
-                     neighborhood_subgraph) for link_index_chunk in link_index_chunks]
+    process_args = [
+        (idx, link_index_chunk, A, x, y, num_hops, node_label, ratio_per_hop, max_nodes_per_hop, directed, A_csc,
+         neighborhood_subgraph) for idx, link_index_chunk in enumerate(link_index_chunks)]
 
     # print(f'| inputs:  {process_args}')
     start_time = time.time()
     print(f"Extracting subgraphs with {cpu_worker_num} processes")
-    with Pool(cpu_worker_num) as p:
+    with Pool(cpu_worker_num, initializer=tqdm.set_lock, initargs=(multiprocessing.RLock(),)) as p:
         outputs = p.map(extract_enclosing_subgraphs, process_args)
-    outputs = functools.reduce(operator.add, outputs) # 合并所有进程的结果
+    outputs = functools.reduce(operator.add, outputs)  # 合并所有进程的结果
     print(f'| outputs length: {len(outputs)} TimeUsed: {time.time() - start_time:.1f}    \n')
     return outputs
 

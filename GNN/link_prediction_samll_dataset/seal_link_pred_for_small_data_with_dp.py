@@ -55,12 +55,12 @@ parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="Ecoli")
 
-parser.add_argument('--uniq_appendix', type=str, default="_2023090801")
+parser.add_argument('--uniq_appendix', type=str, default="_20230909")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
                     help="which specific labeling trick to use")
-parser.add_argument('--num_hops', type=int, default=3,
+parser.add_argument('--num_hops', type=int, default=5,
                     help="num_hops is the path length in path subgraph while in neighborhood it is the radius of neighborhood")
 parser.add_argument('--use_feature', default=False,
                     help="whether to use raw node features as GNN input")
@@ -766,7 +766,8 @@ def main():
                 microbatch_size=1,  # 几个样本梯度进行一次裁剪，这里选择逐样本裁剪
                 params=model.parameters(),
                 lr=args.lr,
-                momentum=args.momentum
+                momentum=args.momentum,
+
             )
             print(f"Number of train samples:{len(train_dataset)}")
             print(
