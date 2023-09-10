@@ -331,8 +331,8 @@ def extract_enclosing_subgraphs_parallel(link_index, A, x, y, num_hops, node_lab
         tasks.append(pool.apply_async(extract_enclosing_subgraphs, args=[args]))
     pool.close()
     pool.join()
-    result_list = [result.get() for result in tasks]
-    outputs = functools.reduce(operator.add, result_list)  # 合并所有进程的结果
+    outputs = [result.get() for result in tasks]
+    outputs = functools.reduce(operator.add, outputs)  # 合并所有进程的结果
     print(f'| outputs length: {len(outputs)} TimeUsed: {time.time() - start_time:.1f}    \n')
     return outputs
 
