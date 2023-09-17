@@ -303,11 +303,12 @@ def extract_enclosing_subgraphs(args):
 
 def extract_enclosing_subgraphs_parallel(link_index, A, x, y, num_hops, node_label='drnl',
                                          ratio_per_hop=1.0, max_nodes_per_hop=None,
-                                         directed=False, A_csc=None, neighborhood_subgraph=False):  # main process
+                                         directed=False, A_csc=None, neighborhood_subgraph=False,
+                                         workers=2):  # main process
     from multiprocessing import Pool
 
-    cpu_worker_num = multiprocessing.cpu_count() - 6
-    # cpu_worker_num = 4
+    # cpu_worker_num = multiprocessing.cpu_count() - 6
+    cpu_worker_num = workers
     link_index_chunks = torch.chunk(link_index, cpu_worker_num, axis=1)
     process_args = [
         (idx, link_index_chunk, A, x, y, num_hops, node_label, ratio_per_hop, max_nodes_per_hop, directed, A_csc,
