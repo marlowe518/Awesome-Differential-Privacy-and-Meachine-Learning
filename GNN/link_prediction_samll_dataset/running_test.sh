@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0 python seal_link_pred_for_small_data_with_dp.py --data_name Celegans --num_layers 2 --lr 0.01 --sigma 1.0 --max_norm 1.0 --batch_size 128 --target_epsilon 0.2 --runs 5 --epochs 30 --uniq_appendix '20230905' --max_node_degree 40 --num_hops 2 --dp_method DPLP

@@ -22,7 +22,7 @@ def load_results(file_path):
 if __name__ == "__main__":
     all_dicts = []
     # begin_date = ["20230805","20230806"]
-    coarse_filter = ["2023-09-17","2023-09-17"]
+    coarse_filter = ["2023-09-17", "2023-09-17"]
     begin_time_str = "2023-09-17-19-06-00"
     end_time_str = "2023-09-18-03-41-00"
     # end_time_str = "2023-12-31-23-59-59"
@@ -46,10 +46,21 @@ if __name__ == "__main__":
 
     from collections import defaultdict
 
-    combined_res = defaultdict(list)
+    # combined_res = dict.fromkeys()
+    input_keys = ['dataset', 'experiment', 'max_node_degree', 'num_hop', 'highest_val', 'final_test', 'val_std',
+                  'test_std', 'best_epoch', 'final_round_val', 'final_round_val_std', 'final_round_test',
+                  'final_round_test_std', 'original_edges', 'sampled_edges', 'max_term_per_edge', 'epsilon', 'sigma',
+                  'all_runs', 'dp_method', 'sens', 'parameter_indicator', 'eps', 'lr', 'max_norm', 'batch_size',
+                  'train_samples', 'neighborhood_subgraph']
+    combined_res = dict([(i, []) for i in input_keys])
+    # combined_res = defaultdict(list)
     for d in all_dicts:  # you can list as many input dicts as you want here
         for key, value in d.items():
             combined_res[key].append(value)
+        if (["sens", "parameter_indicator", "eps"] not in d.keys()).all():
+            d["sens"] = ['n/a']
+            d["parameter_indicator"] = ['n/a']
+            d["eps"] = ['n/a']
     res_df = pd.DataFrame.from_dict(combined_res)
     # res_df = res_df.fillna(method='ffill')
     # res_df = res_df.fillna(value=-1)
@@ -64,7 +75,8 @@ if __name__ == "__main__":
     # results = data_degree_groups.apply(lambda x:x)
     # res_df["original_edges"] = res_df["original_edges"].fillna(method='ffill')
     # res_df["sampled_edges"] = res_df["sampled_edges"].fillna(method='ffill')
-    res_df["val_trend"] = res_df["all_runs"].apply(lambda x: ",".join(list(np.ravel(np.mean(np.array(x["val_test_trend"]), axis=0)[:,0]).astype(str)))) # save as ravelled string
+    res_df["val_trend"] = res_df["all_runs"].apply(lambda x: ",".join(
+        list(np.ravel(np.mean(np.array(x["val_test_trend"]), axis=0)[:, 0]).astype(str))))  # save as ravelled string
     # print(res_df["val_test_trend"][0], sep="\n")
     res_df = res_df.drop(["all_runs"], axis=1)
     res_df.to_csv(f"./results/all_results_{time.strftime('%Y-%m-%d-%H-%M-%S')}.csv")

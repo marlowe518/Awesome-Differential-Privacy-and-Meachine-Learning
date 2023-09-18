@@ -3,7 +3,7 @@ import math
 
 
 def generate_script():
-    dataset = ["Celegans"]
+    dataset = ["USAir"]
     with open(f"./running_{'&'.join(dataset)}_{time.strftime('%Y-%m-%d-%H-%M-%S')}.sh", "w") as f:
         # for dataset in ["Yeast", "Ecoli", "Power", "Router"]:
         # for dataset in ["NS"]:
@@ -11,17 +11,17 @@ def generate_script():
         for dataset in dataset:
             # for dataset in ["NS"]:
             for num_hops in [2]:
-                for max_node_degree in [40]:
+                for max_node_degree in [60]:
                     # for lr in [0.001, 0.01, 0.1, 1.]:
                     for lr in [0.01]:
                         # for sigma in [0.2, 2.]:
-                        for target_epsilon in [0.2, 0.4, 0.8, 0.93, 0.95, 0.97]:
+                        for target_epsilon in [0.8, 0.93, 0.95, 0.97]:
                             # for target_epsilon in [1, 10, 20]:
                             for sigma in [1.]:
                                 for max_norm in [1.]:
                                     for batch_size in [128]:
                                         # TODO num_layers should be deduced by number of hops
-                                        general_args = ["CUDA_VISIBLE_DEVICES=0",
+                                        general_args = ["CUDA_VISIBLE_DEVICES=2",
                                                         "python", "seal_link_pred_for_small_data_with_dp.py",
                                                         f"--data_name {dataset}",
                                                         # f"--num_hops {num_hops}",
@@ -36,7 +36,7 @@ def generate_script():
                                                         f"--epochs {30}",
                                                         # f"--dp_method {'DPLP'}",
                                                         # f"--neighborhood_subgraph",
-                                                        f"--uniq_appendix '20230905'"
+                                                        # f"--uniq_appendix '20230905'"
                                                         ]
                                         for dp_method in ["DPLP", "LapGraph", "DPGC", "DPLP-NS"]:
                                             if dp_method != "DPLP":  # The opposite cases are based on neighborhood subgraph
@@ -47,13 +47,16 @@ def generate_script():
                                                         args += [f"--max_node_degree {300}"]
                                                     else:
                                                         args += [f"--max_node_degree {max_node_degree}"]
-                                                    dp_method = "DPLP"
-                                                args += [f"--num_hops {ns_hop}", f"--dp_method '{dp_method}'"]
+                                                    args += [f"--num_hops {ns_hop}", f"--dp_method {'DPLP'}"]
+                                                else:
+                                                    args += [f"--num_hops {ns_hop}", f"--dp_method {'LapGraph'}"]
                                             else:
                                                 args = general_args + [f"--max_node_degree {max_node_degree}",
                                                                        f"--num_hops {num_hops}",
-                                                                       f"--dp_method '{dp_method}'"]
-                                            print(" ".join(args), file=f)
+                                                                       f"--dp_method {'DPLP'}"]
+                                            args += [f"--uniq_appendix '20230905'"]
+                                            temp = " ".join(args)
+                                            print(temp, file=f)
 
 
 if __name__ == "__main__":
