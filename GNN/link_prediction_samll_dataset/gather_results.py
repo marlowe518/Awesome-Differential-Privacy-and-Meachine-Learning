@@ -55,12 +55,12 @@ if __name__ == "__main__":
     combined_res = dict([(i, []) for i in input_keys])
     # combined_res = defaultdict(list)
     for d in all_dicts:  # you can list as many input dicts as you want here
-        for key, value in d.items():
-            combined_res[key].append(value)
         if (["sens", "parameter_indicator", "eps"] not in d.keys()).all():
             d["sens"] = ['n/a']
             d["parameter_indicator"] = ['n/a']
             d["eps"] = ['n/a']
+        for key, value in d.items():
+            combined_res[key].append(value)
     res_df = pd.DataFrame.from_dict(combined_res)
     # res_df = res_df.fillna(method='ffill')
     # res_df = res_df.fillna(value=-1)
