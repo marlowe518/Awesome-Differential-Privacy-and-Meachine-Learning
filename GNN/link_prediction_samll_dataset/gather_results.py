@@ -55,7 +55,7 @@ if __name__ == "__main__":
     combined_res = dict([(i, []) for i in input_keys])
     # combined_res = defaultdict(list)
     for d in all_dicts:  # you can list as many input dicts as you want here
-        if (["sens", "parameter_indicator", "eps"] not in d.keys()).all():
+        if all(key not in d.keys() for key in ["sens", "parameter_indicator", "eps"]):
             d["sens"] = ['n/a']
             d["parameter_indicator"] = ['n/a']
             d["eps"] = ['n/a']
