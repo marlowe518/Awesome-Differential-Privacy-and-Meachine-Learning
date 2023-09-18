@@ -4,6 +4,8 @@ import time
 import os, sys
 import os.path as osp
 
+from torch.optim.lr_scheduler import ExponentialLR
+
 sys.path.append("D:\opensource\jeff\Awesome-Differential-Privacy-and-Meachine-Learning")
 from shutil import copy
 import copy as cp
@@ -51,7 +53,7 @@ parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # parser.add_argument('--data_name', type=str, default="Router")
 # parser.add_argument('--data_name', type=str, default="USAir")
 # parser.add_argument('--data_name', type=str, default="Yeast")
-parser.add_argument('--data_name', type=str, default="PB")
+parser.add_argument('--data_name', type=str, default="NS")
 # parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="Ecoli")
 
@@ -60,12 +62,12 @@ parser.add_argument('--uniq_appendix', type=str, default="_20230917")
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
                     help="which specific labeling trick to use")
-parser.add_argument('--num_hops', type=int, default=5,
+parser.add_argument('--num_hops', type=int, default=2,
                     help="num_hops is the path length in path subgraph while in neighborhood it is the radius of neighborhood")
 parser.add_argument('--use_feature', default=False,
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
-parser.add_argument('--max_node_degree', type=int, default=60)
+parser.add_argument('--max_node_degree', type=int, default=20)
 parser.add_argument('--check_degree_constrained', default=False)
 parser.add_argument('--check_degree_distribution', default=False)
 parser.add_argument('--neighborhood_subgraph', action='store_true')
@@ -85,9 +87,9 @@ parser.add_argument('--eval_metric', default="auc")
 parser.add_argument('--hitsK', default=50)
 
 # Training settings
-parser.add_argument('--lr', type=float, default=0.1)
+parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--momentum', type=float, default=0.9)
-parser.add_argument('--epochs', type=int, default=50)
+parser.add_argument('--epochs', type=int, default=1)
 parser.add_argument('--runs', type=int, default=5)
 parser.add_argument('--num_workers', type=int, default=0,
                     help="number of workers for dynamic mode; 0 if not dynamic")
@@ -95,14 +97,15 @@ parser.add_argument('--micro_batch', type=bool, default=True,
                     help="non-dp training with microbatch")  # Remember any args passed from command line is strin, the following bool params only for manually tune
 parser.add_argument('--dp_no_noise', type=bool, default=False, help="dp training without noise")
 parser.add_argument('--extract_parallel_workers_num', type=int, default=0)
+parser.add_argument('--learning_rate_decay', type=bool, default=False)
 
 # Privacy settings
-parser.add_argument('--random_seed', type=int, default=1234)
+parser.add_argument('--random_seed', type=int, default=999)
 parser.add_argument('--dp_method', type=str, default="DPLP")
-parser.add_argument('--target_epsilon', type=float, default=1000.)
+parser.add_argument('--target_epsilon', type=float, default=10.)
 parser.add_argument('--lets_dp', type=bool, default=True)
 parser.add_argument('--max_norm', type=float, default=1.)
-parser.add_argument('--sigma', type=float, default=1.)
+parser.add_argument('--sigma', type=float, default=0.00001)
 parser.add_argument('--target_delta', type=float, default=1e-5)
 
 # Testing settings
@@ -532,7 +535,7 @@ def get_noise_multiplier(
         The noise level sigma to ensure privacy budget of (target_epsilon, target_delta)
     """
 
-    sigma_low, sigma_high = 0, 1000  # 从0-10进行搜索，一般的sigma设置也不会超过这个范围。其实从0-5就可以了我觉得。TODO 这个数过大可能导致rdp<0
+    sigma_low, sigma_high = 0, 10000  # 从0-10进行搜索，一般的sigma设置也不会超过这个范围。其实从0-5就可以了我觉得。TODO 这个数过大可能导致rdp<0
     if dp_method == "DPGNN4GC":
         eps_high, best_alpha = account_privacy_dpsgd(step_num=step_num, target_delta=args.target_delta,
                                                      sigma=args.sigma, orders=orders)
@@ -788,9 +791,10 @@ def main():
                 print(f"Sens:{sens}", file=f)
         else:
             optimizer = torch.optim.SGD(params=parameters, lr=args.lr, momentum=args.momentum)
+        if args.learning_rate_decay:
+            scheduler = ExponentialLR(optimizer, gamma=0.95)
         total_params = sum(p.numel() for param in parameters for p in param)
         print(f'Total number of parameters is {total_params}')
-
         # Save model parameters descriptions into log file
         with open(log_file, 'a') as f:
             print(f'Total number of parameters is {total_params}', file=f)
@@ -802,6 +806,8 @@ def main():
                 loss, eps = train_with_dp(model, optimizer, train_dataset, epoch, emb, dp_method=args.dp_method)
             else:
                 loss = train(model, train_loader, optimizer, train_dataset, emb)
+            if args.learning_rate_decay:
+                scheduler.step()
             if epoch % args.eval_steps == 0:
                 results = test(model, val_loader, test_loader, emb)
                 if args.lets_dp:
@@ -875,7 +881,7 @@ def main():
     key_results["batch_size"] = args.batch_size
     key_results["dataset"] = args.data_name
     key_results["train_samples"] = len(train_dataset)
-    key_results["best_epoch"] = np.mean(key_results["all_runs"]["best_epoch"])
+    key_results["best_epoch"] = "/".join(list(map(str, key_results["all_runs"]["best_epoch"])))
     key_results["epsilon"] = args.target_epsilon
     key_results["highest_val"] = np.mean(key_results["all_runs"]["highest_val"])
     # key_results["val_std"] = np.round(np.std(key_results["all_runs"]["highest_val"]), 2) # TODO compared to
