@@ -53,11 +53,11 @@ parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # parser.add_argument('--data_name', type=str, default="Router")
 # parser.add_argument('--data_name', type=str, default="USAir")
 # parser.add_argument('--data_name', type=str, default="Yeast")
-parser.add_argument('--data_name', type=str, default="Celegans")
+parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="Ecoli")
 
-parser.add_argument('--uniq_appendix', type=str, default="_20230917")
+parser.add_argument('--uniq_appendix', type=str, default="_20231112")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
@@ -67,7 +67,7 @@ parser.add_argument('--num_hops', type=int, default=2,
 parser.add_argument('--use_feature', default=False,
                     help="whether to use raw node features as GNN input")
 parser.add_argument('--use_edge_weight', default=None)
-parser.add_argument('--max_node_degree', type=int, default=40)
+parser.add_argument('--max_node_degree', type=int, default=60)
 parser.add_argument('--check_degree_constrained', default=False)
 parser.add_argument('--check_degree_distribution', default=False)
 parser.add_argument('--neighborhood_subgraph', action='store_true')
@@ -76,7 +76,7 @@ parser.add_argument('--neighborhood_subgraph', action='store_true')
 parser.add_argument('--model', type=str, default="GCN")
 parser.add_argument('--sortpool_k', type=float, default=0.6)
 parser.add_argument('--num_layers', type=int, default=3)
-parser.add_argument('--batch_size', type=int, default=128)
+parser.add_argument('--batch_size', type=int, default=512)
 parser.add_argument('--hidden_channels', type=int, default=32)
 parser.add_argument('--train_percent', type=float, default=100)
 parser.add_argument('--test_percent', type=float, default=100)
@@ -89,7 +89,7 @@ parser.add_argument('--hitsK', default=50)
 # Training settings
 parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--momentum', type=float, default=0.9)
-parser.add_argument('--epochs', type=int, default=30)
+parser.add_argument('--epochs', type=int, default=50)
 parser.add_argument('--runs', type=int, default=5)
 parser.add_argument('--num_workers', type=int, default=0,
                     help="number of workers for dynamic mode; 0 if not dynamic")
@@ -102,7 +102,7 @@ parser.add_argument('--learning_rate_decay', type=bool, default=False)
 # Privacy settings
 parser.add_argument('--random_seed', type=int, default=999)
 parser.add_argument('--dp_method', type=str, default="DPLP")
-parser.add_argument('--target_epsilon', type=float, default=0.2)
+parser.add_argument('--target_epsilon', type=float, default=False)
 parser.add_argument('--lets_dp', type=bool, default=True)
 parser.add_argument('--max_norm', type=float, default=1.)
 parser.add_argument('--sigma', type=float, default=0.00001)
@@ -122,6 +122,9 @@ parser.add_argument('--visible_gpus', type=str, default='0,1,2,3')
 args = parser.parse_args()
 # os.environ['CUDA_VISIBLE_DEVICES'] = args.visible_gpus
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+plt.rcParams['figure.figsize'] = [10, 8]  # 图片像素
+plt.rcParams['savefig.dpi'] = 600  # 分辨率
+plt.rcParams["font.family"] = "Times New Roman"
 
 
 def load_data(data_name):
@@ -137,13 +140,22 @@ def load_data(data_name):
     return A_csc, split_edge
 
 
-def inspect_data_frequency_distribution(values, bin_nums=10, title=""):
+def inspect_data_frequency_distribution(values, bin_nums=10, x_label="value", y_label="counts", title=""):
     bins = pd.cut(values, bins=bin_nums)
     print("bin_counts\n", bins.value_counts())
+    label_size = 25
+    fig, ax = plt.subplots()
+    plt.yticks(fontsize=label_size)
+    plt.xticks(fontsize=label_size)
     plt.hist(values, bins=bin_nums)
-    plt.title(title)
-    plt.xlabel("value")
-    plt.ylabel("counts")
+    plt.title(title, size=40)
+    plt.grid()
+    ax.tick_params(axis="x", labelsize=label_size)
+    ax.tick_params(axis="y", labelsize=label_size)
+    ax.set_xlim()
+    # ax.set_ylim()
+    ax.set_xlabel(x_label, fontsize=30)
+    ax.set_ylabel(y_label, fontsize=30)
     plt.show()
 
 
@@ -189,6 +201,14 @@ class SEALDatasetSmall(InMemoryDataset):
         super(SEALDatasetSmall, self).__init__(root)
         self.data, self.slices = torch.load(self.processed_paths[0])
 
+    def degree_distribution(self):
+        assert scipy.linalg.issymmetric(self.A_csc.toarray()), "Train_net must be symmetric!"
+        A_arr = self.A_csc.toarray()
+        degree_distribution = A_arr.sum(axis=1)
+        inspect_data_frequency_distribution(degree_distribution, bin_nums=50,
+                                            x_label="degree", y_label="counts", title=args.data_name)
+        return degree_distribution
+
     @property
     def processed_file_names(self):
         if self.percent == 100:
@@ -199,6 +219,9 @@ class SEALDatasetSmall(InMemoryDataset):
         return [name]
 
     def process(self):
+        check_degree = False
+        if check_degree:
+            self.degree_distribution()
         # Here we do not sample pos edges and neg edges should be already included.
         assert "edge_neg" in self.split_edge[self.split].keys(), "neg edges must be given"
         pos_edge = self.split_edge[self.split]["edge"].t()
@@ -321,18 +344,18 @@ class SEALDatasetSmall(InMemoryDataset):
 #     # max_terms_per_edge = min(max_terms_per_edge, args.batch_size)  # Bounded by batch_size
 #     return max_terms_per_edge
 
-def compute_max_terms_per_edge_for_neighborhood(num_message_passing_steps, max_node_degree, lamda=1):
+def compute_max_terms_per_edge_for_neighborhood(num_hops, max_node_degree, lamda=1):
     number_of_low_hop_neighbors = 0
-    for i in range(num_message_passing_steps):
+    for i in range(num_hops):
         number_of_low_hop_neighbors += 2 * max_node_degree ** i
-    number_of_h_hop_neighbors = max_node_degree ** num_message_passing_steps
+    number_of_h_hop_neighbors = max_node_degree ** num_hops
     max_terms_per_edge = (number_of_low_hop_neighbors + number_of_h_hop_neighbors) * (1 + lamda) * max_node_degree
     return max_terms_per_edge
 
 
 def compute_max_terms_per_edge(num_message_passing_steps, max_node_degree, num_hops):
     if args.neighborhood_subgraph:
-        return compute_max_terms_per_edge_for_neighborhood(num_message_passing_steps, max_node_degree)
+        return compute_max_terms_per_edge_for_neighborhood(num_hops, max_node_degree)
     else:
         return compute_max_terms_per_edge_for_path(num_hops, max_node_degree)
 
@@ -375,7 +398,6 @@ def compute_max_terms_per_edge_for_path(path_length, max_node_degree, lamda=1):
     else:
         raise ValueError(f"not a valid path_length of {path_length}")
     return all_implicated_edges
-
 
 def parameter_selection_loss(path_length, max_node_degree, A_csc, split_edge,
                              epsilon, beta_1, beta_2, gamma=0.001, lamda=1, differentially_private=False):
@@ -432,7 +454,7 @@ def train_dynamic_add_noise(model, train_loader, optimizer, criterion, full_batc
     i = 0
 
     for id, data in enumerate(train_loader):  # TODO per-sample computation for mini-batch
-        optimizer.zero_accum_grad()  # 梯度清空
+        optimizer.zero_accum_grad()
         for id in range(data.num_graphs):
             data_microbatch = data[id]
             data_microbatch.to(device)
@@ -442,16 +464,15 @@ def train_dynamic_add_noise(model, train_loader, optimizer, criterion, full_batc
             node_id = data_microbatch.node_id if emb else None
             logits = model(data_microbatch.z, data_microbatch.edge_index, data_microbatch.batch, x, edge_weight,
                            node_id, micro_batch=True)
-            # loss = criterion(logits.view(-1), data_microbatch.y.to(torch.float))
             loss = BCEWithLogitsLoss()(logits.view(-1), data_microbatch.y.to(torch.float))
-            loss.backward()  # 梯度求导，这边求出梯度
-            optimizer.microbatch_step()  # 这个step做的是每个样本的梯度裁剪和梯度累加的操作
+            loss.backward()
+            optimizer.microbatch_step()
             train_loss += loss.item()
         if args.dp_no_noise:
-            optimizer.step_dp(no_noise=True)  # 这个做的是梯度加噪和梯度平均更新下降的操作 TODO Remove the "no_noise" attribute
+            optimizer.step_dp(no_noise=True)
         else:
             optimizer.step_dp()
-    return train_loss / len(train_loader.dataset), train_acc  # 返回平均损失和平均准确率
+    return train_loss / len(train_loader.dataset), train_acc
 
 
 def train(model, train_loader, optimizer, train_dataset, emb=None):

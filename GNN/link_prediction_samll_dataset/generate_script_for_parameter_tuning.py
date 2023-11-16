@@ -4,6 +4,7 @@ import math
 
 def generate_script():
     dataset = ["USAir"]
+    all_args = []
     with open(f"./running_{'&'.join(dataset)}_{time.strftime('%Y-%m-%d-%H-%M-%S')}.sh", "w") as f:
         # for dataset in ["Yeast", "Ecoli", "Power", "Router"]:
         # for dataset in ["NS"]:
@@ -15,7 +16,7 @@ def generate_script():
                     # for lr in [0.001, 0.01, 0.1, 1.]:
                     for lr in [0.01]:
                         # for sigma in [0.2, 2.]:
-                        for target_epsilon in [0.8, 0.93, 0.95, 0.97]:
+                        for target_epsilon in [1, 5, 15]:
                             # for target_epsilon in [1, 10, 20]:
                             for sigma in [1.]:
                                 for max_norm in [1.]:
@@ -33,7 +34,7 @@ def generate_script():
                                                         f"--batch_size {batch_size}",
                                                         f"--target_epsilon {target_epsilon}",
                                                         f"--runs {5}",
-                                                        f"--epochs {30}",
+                                                        f"--epochs {40}",
                                                         # f"--dp_method {'DPLP'}",
                                                         # f"--neighborhood_subgraph",
                                                         # f"--uniq_appendix '20230905'"
@@ -56,7 +57,9 @@ def generate_script():
                                                                        f"--dp_method {'DPLP'}"]
                                             args += [f"--uniq_appendix '20230905'"]
                                             temp = " ".join(args)
-                                            print(temp, file=f)
+                                            if temp not in all_args:
+                                                all_args.append(temp)
+                                                print(temp, file=f)
 
 
 if __name__ == "__main__":

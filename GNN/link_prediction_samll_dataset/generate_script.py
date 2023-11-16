@@ -7,17 +7,17 @@ def generate_script():
         # for dataset in ["NS"]:
         # for dataset in ["USAir"]:
         # for dataset in ["NS", "USAir", "PB", "Ecoli", "Power"]:
-        for dataset in ["Power"]:
-            for num_hops in [4]:
-                for max_node_degree in [40]:
+        for dataset in ["PB"]:
+            for num_hops in [1]:
+                for max_node_degree in [60]:
                     # for lr in [0.001, 0.01, 0.1, 1.]:
                     for lr in [0.01]:
                         # for sigma in [0.2, 2.]:
-                        for target_epsilon in [1, 3, 5, 7, 9, 11, 13, 15, 17, 20]:
+                        for target_epsilon in [5, 10, 20, 25]:
                             # for target_epsilon in [1, 10, 20]:
                             for sigma in [1.]:
                                 for max_norm in [1.]:
-                                    for batch_size in [128]:
+                                    for batch_size in [512]:
                                         # TODO num_layers should be deduced by number of hops
                                         print(" ".join(["python", "seal_link_pred_for_small_data_with_dp.py",
                                                         f"--data_name {dataset}",
@@ -29,10 +29,10 @@ def generate_script():
                                                         f"--max_norm {max_norm}",
                                                         f"--batch_size {batch_size}",
                                                         f"--target_epsilon {target_epsilon}",
-                                                        f"--runs {3}",
+                                                        f"--runs {5}",
                                                         f"--dp_method {'DPLP'}",
-                                                        # f"--neighborhood_subgraph",
-                                                        f"--uniq_appendix '20230815'"]), file=f, )
+                                                        f"--neighborhood_subgraph",
+                                                        f"--uniq_appendix '_20231112'"]), file=f, )
 
 
 # def split_script():

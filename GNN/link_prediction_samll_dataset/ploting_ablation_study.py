@@ -58,7 +58,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 #     plt.show()
 
 def Plotings(df_list: list, markers, labels: list = None, metric_name="NDCG@10",
-             x_label=r'${\rm \epsilon}$', save_file_path: str = None):
+             x_label=r'${\rm \epsilon}$', save_file_path: str = None, fix: str = None):
     """ A dataframe where the first column is the x label values, and multiple y as multiple lines.
     Args:
         df_compare:
@@ -74,22 +74,35 @@ def Plotings(df_list: list, markers, labels: list = None, metric_name="NDCG@10",
     fig, ax = plt.subplots()
     for i, df in enumerate(df_list):
         # names = df.columns.values
-        plt.errorbar(df.iloc[:, 0], df.iloc[:, 1], df.iloc[:, 2], label=labels[i],
-                     marker=markers[i], markersize=20,
-                     linestyle='-', color=mcolors.TABLEAU_COLORS[colors[i]], linewidth=3,
-                     capsize=15, capthick=3)
-    ax.tick_params(axis="x", labelsize=25)
-    ax.tick_params(axis="y", labelsize=25)
-    ax.set_xlim(df.iloc[0, 0], df.iloc[-1, 0])
-    ax.set_ylim(50, 100)
-    plt.yticks(fontsize=25)
-    plt.yticks([60, 70, 80, 90, 100], fontsize=25)
-    ax.set_xlabel(x_label, fontsize=30)
-    ax.set_ylabel(metric_name, fontsize=25)
-    plt.legend(loc='lower right', prop={'size': 20})
+        if fix == "num_hop":
+            plt.errorbar(df.iloc[:, 0], df.iloc[:, 1], df.iloc[:, 2], label=labels[i],
+                         marker=markers[i], markersize=20,
+                         linestyle='-', color=mcolors.TABLEAU_COLORS[colors[i]], linewidth=3,
+                         capsize=15, capthick=3)
+        elif fix == "max_node_degree":
+            plt.bar(df.iloc[:, 0], df.iloc[:, 1], label=labels[i], width=0.5, color=mcolors.TABLEAU_COLORS[colors[i]])
+            break
+    label_size = 40
+    if fix == "num_hop":
+        ax.set_ylim(70, 100)
+        plt.xticks([20, 40, 60, 80, 100], fontsize=label_size)
+        plt.yticks([80, 90, 100], fontsize=label_size)
+        ax.set_xlim(df.iloc[0, 0], df.iloc[-1, 0])
+        plt.legend(loc='lower right', prop={'size': label_size-5})
+    elif fix == "max_node_degree":
+        ax.set_ylim(50, 100)
+        plt.xticks([2.0, 3.0, 4.0], fontsize=label_size)
+        plt.yticks([60, 70, 80, 90, 100], fontsize=label_size)
+        ax.set_xlim(df.iloc[0, 0] - 0.5, df.iloc[-1, 0] + 0.5)
+    ax.tick_params(axis="x", labelsize=label_size)
+    ax.tick_params(axis="y", labelsize=label_size)
+    plt.xticks(fontsize=label_size)
+    plt.yticks(fontsize=label_size)
+    ax.set_xlabel(x_label, fontsize=label_size)
+    ax.set_ylabel(metric_name, fontsize=label_size)
     ax.grid()
     if save_file_path:
-        plt.savefig(save_file_path, format="pdf", dpi=600)
+        plt.savefig(save_file_path, format="pdf", dpi=600, bbox_inches='tight')
     plt.show()
 
 
@@ -143,6 +156,22 @@ def data_extraction(query: str):
     return pandasSQL_solution
 
 
+def query_generate_hop(**kwargs):
+    y, std = "final_test", "test_std"
+    x = kwargs.get("x")
+    epsilon = kwargs.get("epsilon")
+    max_node_degree = kwargs.get("max_node_degree")
+    data_name = kwargs.get("data_name")
+    num_hop = kwargs.get("num_hop")
+    query = f"""
+        SELECT {x}, {y}, {std} FROM df
+        WHERE df.dataset == '{data_name}' AND df.epsilon == {epsilon} AND df.max_node_degree == {max_node_degree}
+        ORDER BY df.num_hop ASC
+        """
+    save_file_path = f'./results_figures/{data_name}_{x}_{max_node_degree}.pdf'
+    return query, save_file_path
+
+
 def query_generate(**kwargs):
     y, std = "final_test", "test_std"
     x = kwargs.get("x")
@@ -150,11 +179,6 @@ def query_generate(**kwargs):
     max_node_degree = kwargs.get("max_node_degree")
     data_name = kwargs.get("data_name")
     num_hop = kwargs.get("num_hop")
-    # query = f"""
-    #     SELECT {x}, {y}, {std} FROM df
-    #     WHERE df.dataset == '{data_name}' AND df.epsilon == {epsilon} AND df.max_node_degree == {max_node_degree}
-    #     ORDER BY df.num_hop ASC
-    #     """
     query = f"""
             SELECT {x}, {y}, {std} FROM df 
             WHERE df.dataset == '{data_name}' AND df.epsilon == {epsilon} AND df.num_hop == {num_hop}
@@ -164,27 +188,39 @@ def query_generate(**kwargs):
     return query, save_file_path
 
 
-def main():
+def main(fix="max_node_degree"):
     queries, df_list = [], []
     data_name = "Celegans"
-    # max_node_degree = 40
-    # key_values = [{"x": "num_hop", "epsilon": 11, "data_name": f"{data_name}", "max_node_degree": max_node_degree,
-    #                "num_hop": num_hop},
-    #               {"x": "num_hop", "epsilon": 3, "data_name": f"{data_name}", "max_node_degree": max_node_degree,
-    #                "num_hop": num_hop}]
-    num_hop = 2
-    key_values = [{"x": "max_node_degree", "epsilon": 11, "data_name": f"{data_name}", "num_hop": num_hop},
-                  {"x": "max_node_degree", "epsilon": 3, "data_name": f"{data_name}", "num_hop": num_hop}]
+    if fix == "max_node_degree":
+        # OPTION: FIX NODE DEGREE AND CHECK HOP
+        max_node_degree = 60
+        key_values = [{"x": "num_hop", "epsilon": 11, "data_name": f"{data_name}", "max_node_degree": max_node_degree},
+                      {"x": "num_hop", "epsilon": 3, "data_name": f"{data_name}", "max_node_degree": max_node_degree}]
+    elif fix == "num_hop":
+        num_hop = 2
+        key_values = [{"x": "max_node_degree", "epsilon": 11, "data_name": f"{data_name}", "num_hop": num_hop},
+                      {"x": "max_node_degree", "epsilon": 3, "data_name": f"{data_name}", "num_hop": num_hop}]
+    else:
+        raise ValueError("not a valid fix")
     for ky in key_values:
-        query, save_file_path = query_generate(**ky)
+        if fix == "max_node_degree":
+            query, save_file_path = query_generate_hop(**ky)
+        elif fix == "num_hop":
+            query, save_file_path = query_generate(**ky)
+        else:
+            raise ValueError("not a valid fix")
         queries.append(query)
 
     for query in queries:
         df = data_extraction(query)
         df_list.append(df)
     # save_file_path = f'./results_figures/{"Celegans"}_{"num_hop"}.pdf'
-    Plotings(df_list, compares_markers, labels=["eps=11", "eps=3"], metric_name="AUC(%)", x_label=r"$\theta$",
-             save_file_path=save_file_path)
+    if fix == "max_node_degree":
+        x_label = "k"
+    elif fix == "num_hop":
+        x_label = r"$\theta$"
+    Plotings(df_list, compares_markers, labels=[r"$\varepsilon$=11", r"$\varepsilon$=3"], metric_name="AUC(%)", x_label=x_label,
+             save_file_path=save_file_path, fix=fix)
 
 
 if __name__ == '__main__':
@@ -214,4 +250,5 @@ if __name__ == '__main__':
     # test_ablation(file_path, "num_hop", x_label=r'${\theta}$')
     dtypes = {"max_node_degree": int, "epsilon": int, "dataset": str}
     df = load_table(file_path, dtypes=dtypes)
-    main()
+    main(fix="num_hop")
+
