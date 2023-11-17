@@ -22,9 +22,9 @@ def load_results(file_path):
 if __name__ == "__main__":
     all_dicts = []
     # begin_date = ["20230805","20230806"]
-    coarse_filter = ["2023-11-15", "2023-11-16"]
-    begin_time_str = "2023-11-15-17-00-00"
-    end_time_str = "2023-11-16-00-00-00"
+    coarse_filter = ["2023-11-17", "2023-11-18"]
+    begin_time_str = "2023-11-17-12-00-00"
+    end_time_str = "2023-11-18-00-00-00"
     # end_time_str = "2023-12-31-23-59-59"
     begin_date = datetime.datetime.strptime(begin_time_str, "%Y-%m-%d-%H-%M-%S")
     end_date = datetime.datetime.strptime(end_time_str, "%Y-%m-%d-%H-%M-%S")

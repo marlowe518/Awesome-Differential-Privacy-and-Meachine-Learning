@@ -89,7 +89,7 @@ parser.add_argument('--hitsK', default=50)
 # Training settings
 parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--momentum', type=float, default=0.9)
-parser.add_argument('--epochs', type=int, default=50)
+parser.add_argument('--epochs', type=int, default=80)
 parser.add_argument('--runs', type=int, default=5)
 parser.add_argument('--num_workers', type=int, default=0,
                     help="number of workers for dynamic mode; 0 if not dynamic")
@@ -102,7 +102,7 @@ parser.add_argument('--learning_rate_decay', type=bool, default=False)
 # Privacy settings
 parser.add_argument('--random_seed', type=int, default=999)
 parser.add_argument('--dp_method', type=str, default="DPLP")
-parser.add_argument('--target_epsilon', type=float, default=False)
+parser.add_argument('--target_epsilon', type=float, default=100)
 parser.add_argument('--lets_dp', type=bool, default=True)
 parser.add_argument('--max_norm', type=float, default=1.)
 parser.add_argument('--sigma', type=float, default=0.00001)
@@ -597,7 +597,7 @@ def get_noise_multiplier(
         else:
             sigma_low = sigma
 
-    return round(sigma_high, 2)
+    return sigma_high
 
 
 def train_with_dp(model, optimizer, train_dataset, epoch, emb=None, dp_method="DPLP"):

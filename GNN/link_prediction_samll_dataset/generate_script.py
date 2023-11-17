@@ -13,7 +13,7 @@ def generate_script():
                     # for lr in [0.001, 0.01, 0.1, 1.]:
                     for lr in [0.01]:
                         # for sigma in [0.2, 2.]:
-                        for target_epsilon in [5, 10, 20, 25]:
+                        for target_epsilon in [100]:
                             # for target_epsilon in [1, 10, 20]:
                             for sigma in [1.]:
                                 for max_norm in [1.]:
