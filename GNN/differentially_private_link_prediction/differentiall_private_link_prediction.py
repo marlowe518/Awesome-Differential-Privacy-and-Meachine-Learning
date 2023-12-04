@@ -4,6 +4,7 @@ import time
 import os, sys
 import os.path as osp
 
+import networkx as nx
 from torch.optim.lr_scheduler import ExponentialLR
 
 sys.path.append("D:\opensource\jeff\Awesome-Differential-Privacy-and-Meachine-Learning")
@@ -53,11 +54,11 @@ parser = argparse.ArgumentParser(description='SEAL_for_small_dataset')
 # parser.add_argument('--data_name', type=str, default="Router")
 # parser.add_argument('--data_name', type=str, default="USAir")
 # parser.add_argument('--data_name', type=str, default="Yeast")
-parser.add_argument('--data_name', type=str, default="PB")
+parser.add_argument('--data_name', type=str, default="USAir")
 # parser.add_argument('--data_name', type=str, default="PB")
 # parser.add_argument('--data_name', type=str, default="Ecoli")
 
-parser.add_argument('--uniq_appendix', type=str, default="_20231112")
+parser.add_argument('--uniq_appendix', type=str, default="_20231119")
 
 # Subgraph extraction settings
 parser.add_argument('--node_label', type=str, default='drnl',
@@ -89,7 +90,7 @@ parser.add_argument('--hitsK', default=50)
 # Training settings
 parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--momentum', type=float, default=0.9)
-parser.add_argument('--epochs', type=int, default=80)
+parser.add_argument('--epochs', type=int, default=30)
 parser.add_argument('--runs', type=int, default=5)
 parser.add_argument('--num_workers', type=int, default=0,
                     help="number of workers for dynamic mode; 0 if not dynamic")
@@ -102,10 +103,10 @@ parser.add_argument('--learning_rate_decay', type=bool, default=False)
 # Privacy settings
 parser.add_argument('--random_seed', type=int, default=999)
 parser.add_argument('--dp_method', type=str, default="DPLP")
-parser.add_argument('--target_epsilon', type=float, default=100)
+parser.add_argument('--target_epsilon', type=float, default=4)
 parser.add_argument('--lets_dp', type=bool, default=True)
 parser.add_argument('--max_norm', type=float, default=1.)
-parser.add_argument('--sigma', type=float, default=0.00001)
+parser.add_argument('--sigma', type=float, default=1.)
 parser.add_argument('--target_delta', type=float, default=1e-5)
 
 # Testing settings
@@ -137,6 +138,9 @@ def load_data(data_name):
     import scipy.io as sio
     mat_data = sio.loadmat(f"./data/processed_data/{data_name}_train.mat")
     A_csc = mat_data["net"]
+    G = nx.from_scipy_sparse_array(A_csc)
+    # print(f"{data_name} Average clustering coefficient:{nx.average_clustering(G)}")
+    # print(f"{data_name} Sparsity= {1.0 - A_csc.nnz / (A_csc.shape[0] * A_csc.shape[1])}")
     return A_csc, split_edge
 
 
@@ -338,12 +342,6 @@ class SEALDatasetSmall(InMemoryDataset):
         del pos_list, neg_list
 
 
-# def compute_max_terms_per_edge(num_message_passing_steps, max_node_degree):
-#     max_node_degree = 2 * max_node_degree ** 2
-#     max_terms_per_edge = sum([max_node_degree ** i for i in range(1, num_message_passing_steps + 1)])
-#     # max_terms_per_edge = min(max_terms_per_edge, args.batch_size)  # Bounded by batch_size
-#     return max_terms_per_edge
-
 def compute_max_terms_per_edge_for_neighborhood(num_hops, max_node_degree, lamda=1):
     number_of_low_hop_neighbors = 0
     for i in range(num_hops):
@@ -398,6 +396,7 @@ def compute_max_terms_per_edge_for_path(path_length, max_node_degree, lamda=1):
     else:
         raise ValueError(f"not a valid path_length of {path_length}")
     return all_implicated_edges
+
 
 def parameter_selection_loss(path_length, max_node_degree, A_csc, split_edge,
                              epsilon, beta_1, beta_2, gamma=0.001, lamda=1, differentially_private=False):
@@ -529,7 +528,6 @@ def account_privacy(num_message_passing_steps,
     epsilon, best_alpha = compute_eps(orders, rdp_every_epoch, target_delta)
     return epsilon, best_alpha
 
-
 def get_noise_multiplier(
         target_epsilon: float,
         target_delta: float,
@@ -625,21 +623,6 @@ def train_with_dp(model, optimizer, train_dataset, epoch, emb=None, dp_method="D
                                               sigma=args.sigma,
                                               orders=orders,
                                               target_delta=args.target_delta)
-    # from privacy_analysis.RDP.compute_multiterm_rdp import compute_multiterm_rdp
-    # from privacy_analysis.RDP.rdp_convert_dp import compute_eps
-    # orders = np.arange(1, 10, 0.1)[1:]
-    # max_terms_per_edge = compute_max_terms_per_edge(num_message_passing_steps=args.num_layers,
-    #                                                 max_node_degree=args.max_node_degree,
-    #                                                 num_hops=args.num_hops)
-    # max_terms_per_edge = min(max_terms_per_edge, len(train_dataset))
-    # # assert max_terms_per_node <= len(train_dataset), "#affected terms must <= #samples"
-    # rdp_every_epoch = compute_multiterm_rdp(orders, epoch, args.sigma, len(train_dataset),
-    #                                         max_terms_per_edge, args.batch_size)
-    #
-    # from privacy_analysis.RDP.compute_rdp import compute_rdp
-    # rdp_every_epoch_org = compute_rdp(args.batch_size / len(train_dataset), args.sigma, 1 * epoch, orders)
-    # epsilon, best_alpha = compute_eps(orders, rdp_every_epoch, args.target_delta)
-    # # epsilon_org, best_alpha_org = compute_eps(orders, rdp_every_epoch_org, args.target_delta)
     print("epoch: {:3.0f}".format(epoch) + " | epsilon: {:10.7f}".format(
         epsilon) + " | best_alpha: {:7.4f}".format(best_alpha))
     # print("epoch: {:3.0f}".format(epoch) + " | epsilon_org: {:10.7f}".format(
