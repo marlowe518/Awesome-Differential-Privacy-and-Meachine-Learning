@@ -1,1 +1,2 @@
+# Intro
 The implementation of differentially private link prediction for garph neural network. The link of the full version of the manuscript is https://github.com/marlowe518/Awesome-Differential-Privacy-and-Meachine-Learning/blob/20230731/GNN/differentially_private_link_prediction/Full%20version.pdf.
